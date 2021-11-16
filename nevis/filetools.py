@@ -117,7 +117,7 @@ class Filetools:
         """
 
         path = cls.open_cache(filename)
-        file = open(filename, "w")
+        file = open(path, "w")
         pop_count = 0
         pop_names = ['A', 'B', 'C', 'D']
 
