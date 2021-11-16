@@ -163,10 +163,8 @@ if run_vivado == 'y':
     import os
     cwd = os.getcwd()
     
-    path = cwd + "/File_transfer.sh"
-    print(path)
-    input()
-    call('/Users/freddierenyard/Desktop/Compiler/proto_nevis/proto_nevis/File_transfer.sh')
+    script_path = cwd + "/nevis/File_transfer.sh"
+    call(script_path)
 
     # Output a notification (Mac OS specific, for my own use!)
     def notify(title, text):

@@ -1,5 +1,5 @@
 #!/bin/bash
-# This script is run when the remote Vivado host is logged into over SSH.
+# This script is run on the host machine when the remote Vivado host is logged into over SSH.
 
 echo "Attempting Vivado run..."
 source /home/freddie/Applications/Vivado/2020.2/settings64.sh vivado
