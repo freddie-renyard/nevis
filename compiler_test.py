@@ -141,7 +141,11 @@ compiled_model = [encoder_A, synapses_B, encoder_B, output_stage]
 refractory_params = [n_r, ref_period, t_rc_hardware]
 
 # Save the parameters as a Verilog header file.
-Filetools.compile_and_save_header('model_params.vh', compiled_model, refractory_params)
+Filetools.compile_and_save_header(
+    filename = 'model_params.vh', 
+    full_model = compiled_model, 
+    global_params = refractory_params
+)
 
 # Save the compiled parameters in the appropriate files
 running_mem_total = encoder_A.save_params(0, n_r=n_r)

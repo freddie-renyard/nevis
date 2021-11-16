@@ -35,7 +35,8 @@ class Filetools:
 
         return combined
 
-    def save_to_file(filename, target_list, running_mem_total=0):
+    @classmethod
+    def save_to_file(cls, filename, target_list, running_mem_total=0):
         """ Saves a specified list to a memory file in the working directory with entry comments.
         
         Parameters
@@ -54,13 +55,7 @@ class Filetools:
 
         """
 
-        path = os.path.realpath(__file__) 
-        dir = os.path.dirname(path) + "/file_cache"
-
-        if not os.path.exists(dir):
-            os.makedirs(dir)
-        
-        os.chdir(dir)
+        cls.open_cache()
         file = open(filename, "w")
 
         i = 0
@@ -82,11 +77,22 @@ class Filetools:
         
         return running_mem_total
 
+    @staticmethod
     def report_memory_usage(bits_used):
         print(("Total number of bits used for compiled parameters: " + str(bits_used/1000.0) + "kb"))
         print("\n/-----------------------------/\n")
+
+    @staticmethod
+    def open_cache():
+        path = os.path.realpath(__file__) 
+        dir = os.path.dirname(path) + "/file_cache"
+
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        os.chdir(dir)
     
-    def compile_and_save_header(filename, full_model, global_params):
+    @classmethod
+    def compile_and_save_header(cls, filename, full_model, global_params):
         """Compile the parameters in the objects specified
         into a Verilog header file to make transfer of parameters to hardware easier. This method
         will also save the compiled verilog header (.vh) file into the source directory
@@ -107,12 +113,8 @@ class Filetools:
         -------
         None.
         """
-        path = os.path.realpath(__file__)
-        dir = os.path.dirname(path)
-        dir = dir.replace('proto_nevis', 'temp')
-        dir = dir.replace('temp', 'proto_nevis', 1)
-        os.chdir(dir)
 
+        cls.open_cache()
         file = open(filename, "w")
         pop_count = 0
         pop_names = ['A', 'B', 'C', 'D']
