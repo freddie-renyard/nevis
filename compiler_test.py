@@ -4,6 +4,7 @@ from nevis.filetools import Filetools
 from nevis.neuron_classes import Encoder, Encoder_Floating, Synapses, Synapses_Floating
 from nevis.global_tools import Global_Tools
 import os
+from subprocess import call
 
 def target_function(x):
     """The function to compute between A and B"""
@@ -159,25 +160,14 @@ run_vivado = input("Would you like to run Vivado on host machine? [y/n]: ")
 if run_vivado == 'y':
     # Call the script that transfers the compiled files to 
     # the Vivado server machine
-    from subprocess import call
-    import os
     cwd = os.getcwd()
     
     script_path = cwd + "/nevis/File_transfer.sh"
     call(script_path)
 
-    # Output a notification (Mac OS specific, for my own use!)
-    def notify(title, text):
-        os.system("""
-                osascript -e 'display notification "{}" with title "{}"'
-                """.format(text, title))
-    notify("NeVIS - Bitstream generation is complete", "")
-
 # Open the serial interface. The board will need to be 
 # plugged in to the Vivado machine and programmed from 
 # there as the drivers are incompatible with macOS. 
-# TODO - Install a virtual machine and program from here
-# using Alchitry labs.
 run_model = (input("\nWould you like to run the model alongside the FPGA's output? [y/n]: ") == 'y')
 model.monitor_spikes = False
 
