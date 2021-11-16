@@ -1,8 +1,8 @@
-from proto_nevis.memory_compiler import Compiler
+from nevis.memory_compiler import Compiler
 import math
 import numpy as np
 
-from proto_nevis.filetools import Filetools
+from nevis.filetools import Filetools
 """
 This file contains the classes for the compiled sections of different parts of the network.
 TODO Convert the fixed/floating distiction into subclasses of a main Encoder class etc.

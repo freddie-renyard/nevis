@@ -54,12 +54,11 @@ class Filetools:
 
         """
 
-        path = os.path.realpath(__file__)
-        dir = os.path.dirname(path)
-        dir = dir.replace('proto_nevis', 'temp')
-        dir = dir.replace('temp', 'proto_nevis', 1)
+        path = os.path.realpath(__file__) 
+        
+        dir = os.path.dirname(path) + "/file_cache"
         os.chdir(dir)
-
+        
         file = open(filename, "w")
 
         i = 0
