@@ -52,11 +52,10 @@ class Filetools:
         -------
         running_mem_total: int
             Adds the number of bits compiled to a running total, which can be passed.
-
         """
 
-        cls.open_cache()
-        file = open(filename, "w")
+        path = cls.open_cache(filename)
+        file = open(path, "w")
 
         i = 0
         total_bits = len(target_list[0]) * len(target_list)
@@ -83,13 +82,16 @@ class Filetools:
         print("\n/-----------------------------/\n")
 
     @staticmethod
-    def open_cache():
-        path = os.path.realpath(__file__) 
+    def open_cache(filename):
+        # Obtain path to cache
+        path = os.path.realpath(__file__)
         dir = os.path.dirname(path) + "/file_cache"
 
+        # Create the cache if it does not exist
         if not os.path.exists(dir):
             os.makedirs(dir)
-        os.chdir(dir)
+        
+        return str(dir) + "/" + filename
     
     @classmethod
     def compile_and_save_header(cls, filename, full_model, global_params):
@@ -114,7 +116,7 @@ class Filetools:
         None.
         """
 
-        cls.open_cache()
+        path = cls.open_cache(filename)
         file = open(filename, "w")
         pop_count = 0
         pop_names = ['A', 'B', 'C', 'D']

@@ -162,8 +162,10 @@ if run_vivado == 'y':
     from subprocess import call
     import os
     cwd = os.getcwd()
-    print(cwd)
+    
     path = cwd + "/File_transfer.sh"
+    print(path)
+    input()
     call('/Users/freddierenyard/Desktop/Compiler/proto_nevis/proto_nevis/File_transfer.sh')
 
     # Output a notification (Mac OS specific, for my own use!)
