@@ -55,10 +55,12 @@ class Filetools:
         """
 
         path = os.path.realpath(__file__) 
-        
         dir = os.path.dirname(path) + "/file_cache"
-        os.chdir(dir)
+
+        if not os.path.exists(dir):
+            os.makedirs(dir)
         
+        os.chdir(dir)
         file = open(filename, "w")
 
         i = 0

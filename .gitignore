@@ -1,2 +1,1 @@
-nevis/file_cache/*
-!nevis/file_cache/.gitkeep
+nevis/file_cache
