@@ -1,4 +1,7 @@
 import nengo
+from nengo.builder.signal import Signal
+from nengo.builder.operator import Reset
+import numpy as np
 
 class NevisEnsembleNetwork(nengo.Network):
 
@@ -41,6 +44,8 @@ class NevisEnsembleNetwork(nengo.Network):
         Determines if this network will be added to the current container. If
         ``None``, this network will be added to the network at the top of the
         ``Network.context`` stack unless the stack is empty.
+    tau : int or float
+        The time constant of the synapses in the model.
     Attributes
     ----------
     input : `nengo.Node`
@@ -72,6 +77,7 @@ class NevisEnsembleNetwork(nengo.Network):
         label=None,
         seed=None,
         add_to_container=None,
+        tau=0,
     ):
         print("This method is under construction....")
         
@@ -87,6 +93,7 @@ class NevisEnsembleNetwork(nengo.Network):
         self.output_dimensions = 1
         
         self.neuron_type = nengo.neurons.LIF()
+        self.tau = tau
 
         self.seed = seed
 
@@ -115,10 +122,37 @@ class NevisEnsembleNetwork(nengo.Network):
                 self.output,   # Post object
                 function    = function,
                 transform   = transform,
-                eval_poins  = eval_points
+                eval_points  = eval_points
             )
 
-    def extract_params():
-        print("This method is under construction...")
+def compile_and_save_params():
+    """ Extracts the parameters from the network, compiles them into
+    the appropriate format for the NeVIS hardware, saves them to the 
+    file cache, and invokes the method which transfers and executes
+    Vivado on a remote server.
+    """
+    print("This method is under construction...")
 
-    
+@nengo.builder.Builder.register(NevisEnsembleNetwork)
+def build_NevisEnsembleNetwork(model, network):
+
+    # TODO Perform hardware checks before preceding with FPGA build.
+
+    compile_and_save_params(model, network)
+
+    # Define input signal and assign it to the model's input
+    input_sig = Signal(np.zeros(network.input_dimensions), name="input")
+    model.sig[network.input]["in"] = input_sig
+    model.sig[network.input]["out"] = input_sig
+    model.add_op(Reset(input_sig))
+
+    # Build the input signal into the model
+    input_sig = model.build(nengo.synapses.Lowpass(network.tau), input_sig)
+
+    # Define the output signal
+    output_sig = Signal(np.zeros(network.output_dimensions), name="output")
+    model.sig[network.output]["out"] = output_sig
+
+    # Build the output connection into the model
+    if network.connection.synapse is not None:
+        model.build(network.conenction.synapse, output_sig)
