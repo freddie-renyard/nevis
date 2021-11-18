@@ -2,6 +2,7 @@ import os
 
 class Filetools:
 
+    @staticmethod
     def combine_binary_params(list_0, list_1, verbose=False):
 
         """ This method concatenates two strings together and returns the list.
@@ -219,7 +220,6 @@ class Filetools:
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
                 print(report_tag, "Bit depth of datapath to the NAU: ", sec.n_dv_post)
                 file.write('\n')
-
 
         print("\nGLOBAL PARAMETERS: \n")
         file.write(("// Global Synaptic Params" + '\n'))
