@@ -159,7 +159,7 @@ class Encoder_Floating(Encoder):
         self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
 
 class Synapses:
-    
+
     def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
@@ -210,11 +210,6 @@ class Synapses:
         # Multiply weights by scale factor
         scale_factor_w = 2 ** self.scale_w
         self.weights = [x*scale_factor_w for x in decoders_list]
-        
-        # Check that the magnitude of the weights are less than 1.
-        for value in self.weights:
-            if abs(value) > 1:
-                print("ERROR: Weights are too large for hardware.")
         
         self.comp_activation = self.compile_activations(n_activ=self.n_activ, n_neuron=1)
         self.comp_trait_bits = self.compile_traits(encoders_list)
@@ -312,7 +307,7 @@ class Synapses_Fixed(Synapses):
        
         scale_w = 5
         # Scale the weights by the post-synaptic scaling constant.
-        decoders_list = [x*pstc_scale for x in decoders_list]
+        decoders_list = [x*pstc_scale for x in list(decoders_list)]
 
         super().__init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 
@@ -322,13 +317,14 @@ class Synapses_Fixed(Synapses):
 class Synapses_Floating(Synapses):
 
     def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, verbose=False):
-        
+    
         # Scale the weights by the post-synaptic scaling constant.
         decoders_list = [x*pstc_scale for x in decoders_list]
+        print(decoders_list)
 
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
-            decoders_list = [Compiler.clip_value(x, minimum_val) for x in decoders_list]
+            decoders_list = [Compiler.clip_value(x, minimum_val) for x in list(decoders_list)]
 
         scale_w = Compiler.determine_middle_exp(decoders_list)
         super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)

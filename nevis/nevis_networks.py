@@ -160,8 +160,10 @@ def compile_and_save_params(model, network):
     ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
 
     # Tool for painlessly investigating the parameters of Nengo objects
-    #l = dir(network.ensemble.neuron_type)
-    #print(l)
+    l = dir(param_model.params[network.connection])
+    print(l)
+
+    print(type(ens_args["t_rc"]))
 
     conn_args = {}
     conn_args["weights"] = param_model.params[network.connection].weights
@@ -177,7 +179,7 @@ def compile_and_save_params(model, network):
     comp_args["radix_weights"] = 6
     comp_args["n_dv_post"] = 10
     comp_args["n_activ_extra"] = 6
-    comp_args["min_float_val"] = 1 * 2**-8
+    comp_args["min_float_val"] = 1*2**-20
 
     # TODO SCALE ALL OF THE TEMPORAL PARAMS BY DT
 
@@ -186,7 +188,7 @@ def compile_and_save_params(model, network):
         n_neurons=ens_args["n_neurons"],
         gain_list=ens_args["gain"],
         encoder_list=ens_args["encoders"],
-        bias_list=["bias"],
+        bias_list=ens_args["bias"],
         t_rc=ens_args["t_rc"],
         n_x=comp_args["bits_input"],
         radix_x=comp_args["radix_input"],
@@ -201,12 +203,14 @@ def compile_and_save_params(model, network):
     output_hardware = neuron_classes.Synapses_Floating(
         n_neurons=ens_args["n_neurons"],
         pstc_scale=conn_args["pstc_scale"],
-        decoders_list=conn_args["weights"],
+        decoders_list=conn_args["weights"][0], # Take the zeroeth dimension of this array as it is
+        # a dot product of the decoders and the encoders of the next section (as this dot product
+        # is used for hardware memory optimisation)
         encoders_list=[1], # Indicates a positive weight addition
         n_activ_extra=comp_args["n_activ_extra"],
         radix_w=comp_args["radix_weights"],
         minimum_val=comp_args["min_float_val"],
-        verbose=False
+        verbose=True
     )
 
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
