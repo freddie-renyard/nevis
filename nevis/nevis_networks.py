@@ -2,6 +2,9 @@ import nengo
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Reset
 import numpy as np
+import math
+from nevis import neuron_classes
+#import neuron_classes
 
 class NevisEnsembleNetwork(nengo.Network):
 
@@ -58,10 +61,7 @@ class NevisEnsembleNetwork(nengo.Network):
         An ensemble object whose parameters are used to configure the
         ensemble implementation on the FPGA board.
     connection : `nengo.Connection`
-        The connection object used to configure the learning connection
-        implementation on the FPGA board.
-    feedback : `nengo.Connection`
-        The connection object used to configure the recurrent connection
+        The connection object used to configure the output connection
         implementation on the FPGA board.
     """
 
@@ -77,9 +77,8 @@ class NevisEnsembleNetwork(nengo.Network):
         label=None,
         seed=None,
         add_to_container=None,
-        tau=0,
+        t_pstc=0.1275
     ):
-        print("This method is under construction....")
         
         # Create serial object
         # TODO
@@ -93,7 +92,7 @@ class NevisEnsembleNetwork(nengo.Network):
         self.output_dimensions = 1
         
         self.neuron_type = nengo.neurons.LIF()
-        self.tau = tau
+        self.t_pstc = t_pstc
 
         self.seed = seed
 
@@ -125,19 +124,97 @@ class NevisEnsembleNetwork(nengo.Network):
                 eval_points  = eval_points
             )
 
-def compile_and_save_params():
+def compile_and_save_params(model, network):
     """ Extracts the parameters from the network, compiles them into
     the appropriate format for the NeVIS hardware, saves them to the 
     file cache, and invokes the method which transfers and executes
     Vivado on a remote server.
+
+    Again, implementation takes details from the existing backend.
     """
-    print("This method is under construction...")
+    
+    # Generate the model which the parameters will be taken from
+    param_model = nengo.builder.Model(dt=model.dt)
+    nengo.builder.network.build_network(param_model, network)
+
+    # Gather simulation parameters - identical across all ensembles
+    sim_args = {}
+    sim_args["dt"] = model.dt
+
+    # Gather ensemble parameters - vary between ensembles
+    ens_args = {}
+    ens_args["n_neurons"] = network.ensemble.n_neurons
+    ens_args["input_dimensions"] = network.input_dimensions
+    ens_args["output_dimensions"] = network.output_dimensions
+    ens_args["bias"] = param_model.params[network.ensemble].bias
+    ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc / sim_args["dt"]
+
+    # scaled_encoders = gain * encoders
+    # TODO this is computationally wasteful, but the way that the Encoder 
+    # object is designed at present makes the code below the most readable 
+    # solution. Change the Encoder so that this is not the case.
+    ens_args["encoders"] = param_model.params[network.ensemble].encoders
+    ens_args["gain"] = param_model.params[network.ensemble].gain
+
+    # Gather refractory period
+    ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
+
+    # Tool for painlessly investigating the parameters of Nengo objects
+    #l = dir(network.ensemble.neuron_type)
+    #print(l)
+
+    conn_args = {}
+    conn_args["weights"] = param_model.params[network.connection].weights
+    conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
+    conn_args["pstc_scale"] = 1.0 - math.exp(-1 / network.t_pstc) # Timestep has been normalised to 1
+
+    # Define the compiler params. TODO write an optimiser function to
+    # define these params automatically.
+    comp_args = {}
+    comp_args["radix_encoder"] = 8
+    comp_args["bits_input"] = 8
+    comp_args["radix_input"] = comp_args["bits_input"] - 1
+    comp_args["radix_weights"] = 6
+    comp_args["n_dv_post"] = 10
+    comp_args["n_activ_extra"] = 6
+    comp_args["min_float_val"] = 1 * 2**-8
+
+    # TODO SCALE ALL OF THE TEMPORAL PARAMS BY DT
+
+    # Compile an ensemble (NeVIS - Encoder) TODO ensure that this distinction is correct
+    input_hardware = neuron_classes.Encoder_Floating(
+        n_neurons=ens_args["n_neurons"],
+        gain_list=ens_args["gain"],
+        encoder_list=ens_args["encoders"],
+        bias_list=["bias"],
+        t_rc=ens_args["t_rc"],
+        n_x=comp_args["bits_input"],
+        radix_x=comp_args["radix_input"],
+        radix_g=comp_args["radix_encoder"],
+        radix_b=comp_args["radix_encoder"],
+        n_dv_post=comp_args["n_dv_post"],
+        verbose=False
+    )
+
+    # Compile an output node (Nevis - Synapses)
+    # TODO Check whether weights are prescaled with pstc_scale value (if not default to one)
+    output_hardware = neuron_classes.Synapses_Floating(
+        n_neurons=ens_args["n_neurons"],
+        pstc_scale=conn_args["pstc_scale"],
+        decoders_list=conn_args["weights"],
+        encoders_list=[1], # Indicates a positive weight addition
+        n_activ_extra=comp_args["n_activ_extra"],
+        radix_w=comp_args["radix_weights"],
+        minimum_val=comp_args["min_float_val"],
+        verbose=False
+    )
 
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
 
     # TODO Perform hardware checks before preceding with FPGA build.
 
+    # Extract relevant params
     compile_and_save_params(model, network)
 
     # Define input signal and assign it to the model's input
@@ -147,7 +224,7 @@ def build_NevisEnsembleNetwork(model, network):
     model.add_op(Reset(input_sig))
 
     # Build the input signal into the model
-    input_sig = model.build(nengo.synapses.Lowpass(network.tau), input_sig)
+    input_sig = model.build(nengo.synapses.Lowpass(network.t_pstc), input_sig)
 
     # Define the output signal
     output_sig = Signal(np.zeros(network.output_dimensions), name="output")
