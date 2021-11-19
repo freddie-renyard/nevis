@@ -1,7 +1,7 @@
 import os
 import logging
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 class Filetools:
 
@@ -130,7 +130,6 @@ class Filetools:
             if class_name == 'Encoder':
                 index = pop_names[pop_count]
                 report_tag += index + " Encoder:"
-                print("\nENSEMBLE", index, ": INTEGER ENCODER NEURONS\n")
                 file.write(("// Population " + index + ' Params' + '\n'))
                 file.write(('parameter ' + 'N_NEURON_' + index + ' = ' + str(sec.n_neurons) + ',' + '\n'))
                 # X/Incoming activation Params
@@ -197,3 +196,4 @@ class Filetools:
         file.write(('parameter N_R = ' + str(global_params[0])  + ',' + '\n'))
         file.write(('REF_VALUE = ' + str(global_params[1])  + ',' + '\n'))
         file.write(('T_RC_SHIFT = ' + str(global_params[2])  + ';' + '\n'))
+        logger.info("INFO: Writing the Verilog header file...")

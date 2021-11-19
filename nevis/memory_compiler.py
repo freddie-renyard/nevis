@@ -4,13 +4,7 @@ from matplotlib import pyplot as plt, scale
 from numpy.lib.twodim_base import _trilu_indices_form_dispatcher
 import logging
 
-logging.basicConfig(
-            filename="nevis/logs/nevis.log",
-            format='%(asctime)s %(message)s',
-            filemode="w"
-        )
-logging.getLogger("logs/nevis.log").setLevel(logging.INFO)
-logger = logging.getLogger("logs/nevis.log")
+logger2 = logging.getLogger(__name__)
 
 class Compiler:
 
@@ -75,8 +69,8 @@ class Compiler:
 
         int_bit_depth = math.ceil(math.log2(max_int + 1)) + 1
 
-        logger.info('Report: Whole Number Bit Depth: %4f, Fractional Bit Depth: %4f', int_bit_depth, bin_places)
-        logger.info('Report: Total Bit Depth: %s', str(int_bit_depth + bin_places))
+        logger2.info('Report: Whole Number Bit Depth: %4f, Fractional Bit Depth: %4f', int_bit_depth, bin_places)
+        logger2.info('Report: Total Bit Depth: %s', str(int_bit_depth + bin_places))
 
         i = 0
         for x in target_list:
@@ -120,10 +114,10 @@ class Compiler:
             compiled_str.append(final_number)
 
             if len(final_number) != total_bit_depth:
-                logger.error("ERROR: Final Value is not equal to bit depth for neuron %i", i)
+                logger2.error("ERROR: Final Value is not equal to bit depth for neuron %i", i)
 
             if verbose:
-                logger.info("INFO: Index: %i, Value: %.5f, --> %s", i, x, str(final_number))
+                logger2.info("INFO: Index: %i, Value: %.5f, --> %s", i, x, str(final_number))
                 i += 1
         
         return compiled_str, total_bit_depth
@@ -246,8 +240,8 @@ class Compiler:
                     display_val = value*-1
                 else:
                     display_val = value
-                logger.info("Index: %i, Value: %.5f, Mantissa: %.5f, Exponent: %.5f", i, x, display_val, exponent_val)
-                logger.info("Compiled Mantissa: %s, Compiled Exponent: %s", mantissa_bin, exponent_bin)
+                logger2.info("Index: %i, Value: %.5f, Mantissa: %.5f, Exponent: %.5f", i, x, display_val, exponent_val)
+                logger2.info("Compiled Mantissa: %s, Compiled Exponent: %s", mantissa_bin, exponent_bin)
             
             # Concatenate the two entries together
             concat_result = mantissa_bin + exponent_bin

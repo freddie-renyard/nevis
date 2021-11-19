@@ -9,18 +9,18 @@ from nevis import neuron_classes
 from nevis import serial_link
 from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
+from nevis.memory_compiler import Compiler
 #import neuron_classes
 import sys
 
 from nevis.serial_link import FPGAPort
 
 logging.basicConfig(
-            filename="nevis/logs/nevis.log",
-            format='%(asctime)s %(message)s',
-            filemode="w"
-        )
-logging.getLogger("logs/nevis.log").setLevel(logging.INFO)
-logger = logging.getLogger("logs/nevis.log")
+    level=logging.INFO,
+    filename="nevis/logs/logs.log",
+    filemode="w"
+)
+logger = logging.getLogger(__name__)
 
 class NevisEnsembleNetwork(nengo.Network):
 
@@ -247,6 +247,25 @@ def compile_and_save_params(model, network):
         out_node_depths= [output_hardware.n_w_man + output_hardware.scale_w + output_hardware.n_activ_extra + 1],
         out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
     )
+
+    ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], sim_args["dt"])
+    t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
+
+    compiled_model = [input_hardware, output_hardware]
+    refractory_params = [n_r, ref_period, t_rc_hardware]
+
+    # Save the parameters as a Verilog header file.
+    Filetools.compile_and_save_header(
+        filename = 'model_params.vh', 
+        full_model = compiled_model, 
+        global_params = refractory_params
+    )
+
+    # Save the compiled parameters in the appropriate files
+    running_mem_total = input_hardware.save_params(0, n_r=n_r)
+    running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
+
+    Filetools.report_memory_usage(running_mem_total)
     
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):

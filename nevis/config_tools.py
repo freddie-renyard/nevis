@@ -4,7 +4,7 @@ import json
 
 from nevis.filetools import Filetools
 
-logger = logging.getLogger("logs/nevis.log")
+logger = logging.getLogger(__name__)
 
 class ConfigTools:
 

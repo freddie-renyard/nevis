@@ -26,7 +26,7 @@ with a change solely to the NAU. Otherwise, full drop in high level modules
 can be created specifically for each neuron.
 """
 
-logger = logging.getLogger("logs/nevis.log")
+logger = logging.getLogger(__name__)
 
 class Encoder:
     
