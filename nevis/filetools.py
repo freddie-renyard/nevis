@@ -1,10 +1,12 @@
 import os
 import logging
 
+logger = logging.getLogger()
+
 class Filetools:
 
     @staticmethod
-    def combine_binary_params(list_0, list_1, verbose=False):
+    def combine_binary_params(list_0, list_1):
 
         """ This method concatenates two strings together and returns the list.
         In the context of the overall compiler, this method is used for 
@@ -19,9 +21,6 @@ class Filetools:
         list_1: [str]
             The second list to be concatenated (will appear as the MSBs of each
             concatenated entry)
-        verbose: bool
-            A flag that can be set to print the combined list and each of the 
-            entries to check desired results.
 
         Returns
         -------
@@ -30,10 +29,6 @@ class Filetools:
         """
 
         combined = [(x + y) for x, y in zip(list_0, list_1)]
-
-        if verbose:
-            for i in range(len(combined)):
-                print(combined[i], list_0[i], list_1[i])
 
         return combined
 
@@ -75,7 +70,7 @@ class Filetools:
             division_val = 1000.0
             unit = 'kb'
         
-        print(("Memory usage for " + filename + ": " + str(int(total_bits/division_val)) + unit) + "\n")
+        logger.info("INFO: Memory usage for %s: %s", filename, (str(int(total_bits/division_val)) + unit))
         running_mem_total += total_bits
 
         for element in target_list:
@@ -87,8 +82,7 @@ class Filetools:
 
     @staticmethod
     def report_memory_usage(bits_used):
-        print(("Total number of bits used for compiled parameters: " + str(bits_used/1000.0) + "kb"))
-        print("\n/-----------------------------/\n")
+        logger.info("INFO: Total number of bits used for compiled parameters: %s kb", str(bits_used/1000.0))
 
     @staticmethod
     def open_cache(filename):
@@ -130,8 +124,6 @@ class Filetools:
         pop_count = 0
         pop_names = ['A', 'B', 'C', 'D']
 
-        print("\n/---------FINAL REPORT----------/")
-
         for sec in full_model:
             report_tag = "Population "
             class_name = sec.__class__.__name__
@@ -141,43 +133,30 @@ class Filetools:
                 print("\nENSEMBLE", index, ": INTEGER ENCODER NEURONS\n")
                 file.write(("// Population " + index + ' Params' + '\n'))
                 file.write(('parameter ' + 'N_NEURON_' + index + ' = ' + str(sec.n_neurons) + ',' + '\n'))
-                print(report_tag, "Number of neurons: ", sec.n_neurons)
                 # X/Incoming activation Params
                 file.write(('N_X_' + index + ' = ' + str(sec.n_x) + ',' + '\n'))
-                print(report_tag, "Input bit depth: ", sec.n_x)
                 file.write(('RADIX_X_' + index + ' = ' + str(sec.radix_x) + ',' + '\n'))
-                print(report_tag, "Input radix: ", sec.radix_x)
                 # Gain Params
                 file.write(('N_G_' + index + ' = ' + str(sec.n_g) + ',' + '\n'))
-                print(report_tag, "Gain bit depth: ", sec.n_g)
                 file.write(('RADIX_G_' + index + ' = ' + str(sec.radix_g) + ',' + '\n'))
-                print(report_tag, "Gain radix: ", sec.radix_g)
                 # Bias Params
                 file.write(('N_B_' + index + ' = ' + str(sec.n_b) + ',' + '\n'))
-                print(report_tag, "Bias bit depth: ", sec.n_b)
                 file.write(('RADIX_B_' + index + ' = ' + str(sec.radix_b) + ',' + '\n'))
-                print(report_tag, "Bias radix: ", sec.radix_b)
                 # Output value to NAU param
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
-                print(report_tag, "Bit depth of datapath to the NAU: ", sec.n_dv_post)
                 file.write('\n') 
             elif class_name == 'Synapses':
                 index = pop_names[pop_count]
                 report_tag += index + " Synapses:"
                 file.write(("// Population " + index + ' Synaptic Params' + '\n'))
-                print("\nENSEMBLE", index, ": SYNAPSES\n")
                 # Weight Params
                 file.write(('parameter ' + 'N_WEIGHT_' + index + ' = ' + str(sec.n_w) + ',' + '\n'))
-                print(report_tag, "Weight bit depth: ", sec.n_w)
                 file.write(('SCALE_W_' + index + ' = ' + str(sec.scale_w) + ',' + '\n'))
-                print(report_tag, "Weight scale value: ", sec.scale_w)
                 file.write(('N_WEIGHT_EXP_' + index + ' = ' + str(0) + ',' + '\n'))
                 # Activation Params
                 file.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(sec.n_activ_extra) + ',' + '\n'))
-                print(report_tag, "Extra bit depth in weight path: ", sec.n_activ_extra)
                 # Synaptic time constant
                 file.write(('PSTC_SHIFT_' + index + ' = ' + str(sec.pstc_shift) + ';' + '\n'))
-                print(report_tag, "Post-synaptic time constant shift: ", sec.pstc_shift)
                 # file.write(('ACTIV_L_SHIFT_' + index + ' = ' + str(sec.activ_l_shift) + ';' + '\n')) Obsolete
                 file.write('\n')
                 pop_count += 1
@@ -185,57 +164,36 @@ class Filetools:
                 index = pop_names[pop_count]
                 report_tag += index + " Synapses (Floating):"
                 file.write(("// Population " + index + ' Synaptic Params' + '\n'))
-                print("\nENSEMBLE", index, ": SYNAPSES\n")
                 # Weight Params
                 file.write(('parameter ' + 'N_WEIGHT_' + index + ' = ' + str(sec.n_w) + ',' + '\n'))
-                print(report_tag, "Weight bit depth: ", sec.n_w)
                 file.write(('SCALE_W_' + index + ' = ' + str(sec.scale_w) + ',' + '\n'))
-                print(report_tag, "Weight scale value: ", sec.scale_w)
                 file.write(('N_WEIGHT_EXP_' + index + ' = ' + str(sec.n_w_exp) + ',' + '\n'))
-                print(report_tag, "Weight exponent depth: ", sec.n_w_exp)
                 # Activation Params
                 file.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(sec.n_activ_extra) + ',' + '\n'))
-                print(report_tag, "Extra bit depth in weight path: ", sec.n_activ_extra)
                 # Synaptic time constant
                 file.write(('PSTC_SHIFT_' + index + ' = ' + str(sec.pstc_shift) + ';' + '\n'))
-                print(report_tag, "Post-synaptic time constant shift: ", sec.pstc_shift)
                 # file.write(('ACTIV_L_SHIFT_' + index + ' = ' + str(sec.activ_l_shift) + ';' + '\n')) Obsolete
                 file.write('\n')
                 pop_count += 1
             elif class_name == 'Encoder_Floating':
                 index = pop_names[pop_count]
                 report_tag += index + " Encoder:"
-                print("\nENSEMBLE", index, ": FLOATING-POINT ENCODER NEURONS\n")
                 file.write(("// Population " + index + ' Params' + '\n'))
                 file.write(('parameter ' + 'N_NEURON_' + index + ' = ' + str(sec.n_neurons) + ',' + '\n'))
-                print(report_tag, "Number of neurons: ", sec.n_neurons)
                 # X/Incoming activation Params
                 file.write(('N_X_' + index + ' = ' + str(sec.n_x) + ',' + '\n'))
-                print(report_tag, "Input bit depth: ", sec.n_x)
                 file.write(('RADIX_X_' + index + ' = ' + str(sec.radix_x) + ',' + '\n'))
-                print(report_tag, "Input radix: ", sec.radix_x)
                 # Gain Params
                 file.write(('N_G_MAN_' + index + ' = ' + str(sec.n_g_mantissa) + ',' + '\n'))
-                print(report_tag, "Gain mantissa bit depth: ", sec.n_g_mantissa)
                 file.write(('N_G_EXP_' + index + ' = ' + str(sec.n_g_exponent) + ',' + '\n'))
-                print(report_tag, "Gain exponent bit depth: ", sec.n_g_exponent)
                 # Bias Params
                 file.write(('N_B_MAN_' + index + ' = ' + str(sec.n_b_mantissa) + ',' + '\n'))
-                print(report_tag, "Bias mantissa bit depth: ", sec.n_b_mantissa)
                 file.write(('N_B_EXP_' + index + ' = ' + str(sec.n_b_exponent) + ',' + '\n'))
-                print(report_tag, "Bias exponent bit depth: ", sec.n_b_exponent)
                 # Output value to NAU param
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
-                print(report_tag, "Bit depth of datapath to the NAU: ", sec.n_dv_post)
                 file.write('\n')
 
-        print("\nGLOBAL PARAMETERS: \n")
         file.write(("// Global Synaptic Params" + '\n'))
         file.write(('parameter N_R = ' + str(global_params[0])  + ',' + '\n'))
-        print("Bit depth of refractory period: ", global_params[0])
         file.write(('REF_VALUE = ' + str(global_params[1])  + ',' + '\n'))
-        print("Corresponding value of refractory period: ", global_params[1])
         file.write(('T_RC_SHIFT = ' + str(global_params[2])  + ';' + '\n'))
-        print("Synaptic RC filter time constant shift value: ", global_params[2])
-
-        print("\n/-----------------------------/\n")
