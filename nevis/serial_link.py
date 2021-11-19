@@ -76,8 +76,8 @@ class FPGAPort:
                 pass
 
             if attempts >= max_attempts:
-                logger.error(("ERROR: Serial connection to" + self.port + "failed."))
-                print("[NeVIS]: ERROR: Serial connection to", self.port, "failed.")
+                logger.error(("ERROR: Serial connection to" + self.port + " failed."))
+                print("[NeVIS]: ERROR: Serial connection to", self.port, " failed.")
                 break
 
     def serial_comm_func(self):

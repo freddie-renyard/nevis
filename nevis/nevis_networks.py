@@ -10,6 +10,7 @@ from nevis import serial_link
 from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
 #import neuron_classes
+import sys
 
 logging.basicConfig(
             filename="nevis/logs/nevis.log",
@@ -60,8 +61,10 @@ class NevisEnsembleNetwork(nengo.Network):
         Determines if this network will be added to the current container. If
         ``None``, this network will be added to the network at the top of the
         ``Network.context`` stack unless the stack is empty.
-    tau : int or float
+    t_pstc : int or float
         The time constant of the synapses in the model.
+    verbose : bool
+        Whether to print the logs to the commadn line
     Attributes
     ----------
     input : `nengo.Node`
@@ -90,7 +93,8 @@ class NevisEnsembleNetwork(nengo.Network):
         label=None,
         seed=None,
         add_to_container=None,
-        t_pstc=0.1275
+        t_pstc=0.1275,
+        verbose=False
     ):
         
         # TODO Check compile_design param
@@ -104,6 +108,8 @@ class NevisEnsembleNetwork(nengo.Network):
         if compile_design:
             ConfigTools.purge_model_config()
 
+        if verbose:
+            logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
         ConfigTools.run_fpga_config_wizard()
 
         self.input_dimensions = dimensions
