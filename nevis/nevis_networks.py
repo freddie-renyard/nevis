@@ -145,7 +145,7 @@ class NevisEnsembleNetwork(nengo.Network):
                 label       = "Dummy Ensemble"
             )
             nengo.Connection(self.input, self.ensemble, synapse=None)
-
+            
             self.connection = nengo.Connection(
                 self.ensemble, # Pre object
                 self.output,   # Post object

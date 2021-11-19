@@ -86,7 +86,6 @@ class FPGAPort:
         """ Function for sending and recieving data from the FPGA on each timestep.
 
         """
-        data = [0.420]
         
         # Scale the input value up
         in_scale = 2 ** (self.input_depths[0] - 1)
@@ -106,7 +105,10 @@ class FPGAPort:
             hardware_val = int.from_bytes(rx_data, byteorder="big", signed=True)
             hardware_val = hardware_val / (2**self.output_scales[0])
 
-        return hardware_val
+        if t == 0.0:
+            return 0.5
+        else:
+            return hardware_val
 
     def twos_complementer(self, value):
         # TODO Heavily optimise this.
