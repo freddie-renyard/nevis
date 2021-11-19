@@ -196,7 +196,7 @@ def compile_and_save_params(model, network):
     conn_args = {}
     conn_args["weights"] = param_model.params[network.connection].weights
     conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
-    conn_args["pstc_scale"] = 1.0 - math.exp(-1 / network.t_pstc) # Timestep has been normalised to 1
+    conn_args["pstc_scale"] = 1.0 - math.exp(-1 / conn_args["t_pstc"]) # Timestep has been normalised to 1
 
     # Define the compiler params. TODO write an optimiser function to
     # define these params automatically.
