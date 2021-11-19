@@ -1,6 +1,10 @@
+from logging import Logger
 import serial
 import time
 from nevis.config_tools import ConfigTools
+from nevis.filetools import Filetools
+
+logger = Filetools.get_logger(__name__)
 
 class FPGAPort:
     """An object which is used to handle serial communication to the target FPGA.
@@ -49,7 +53,8 @@ class FPGAPort:
         self.link_addr = 0
 
     def begin_serial(self, timeout):
-        print("[NeVIS]: Attempting to open serial port...")
+
+        logger.info("Attempting to open serial port...")
         
         attempts = 0
 
@@ -60,12 +65,13 @@ class FPGAPort:
         while type(self.link_addr) == int: 
             try:
                 self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005)
-                print('[NeVIS]: Opened serial port to device at ', self.link_addr.name)
+                logger.info('[NeVIS]: Opened serial port to device at %s', self.link_addr.name)
             except:
                 time.sleep(rest_interval)
                 pass
 
             if attempts >= max_attempts:
+                logger.error("[NeVIS]: ERROR: Serial connection to %s failed.", self.port)
                 print("[NeVIS]: ERROR: Serial connection to", self.port, "failed.")
                 break
 

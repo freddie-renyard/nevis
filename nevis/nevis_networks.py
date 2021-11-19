@@ -106,7 +106,6 @@ class NevisEnsembleNetwork(nengo.Network):
             logger.error("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
             print("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
 
-
         # Set the output dimensions - currently only 1D is supported.
         self.output_dimensions = 1
         
@@ -178,10 +177,8 @@ def compile_and_save_params(model, network):
     ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
 
     # Tool for painlessly investigating the parameters of Nengo objects
-    l = dir(param_model.params[network.connection])
-    print(l)
-
-    print(type(ens_args["t_rc"]))
+    #l = dir(param_model.params[network.connection])
+    #print(l)
 
     conn_args = {}
     conn_args["weights"] = param_model.params[network.connection].weights

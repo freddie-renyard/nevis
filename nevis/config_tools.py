@@ -1,5 +1,10 @@
+import logging
 import os
 import json
+
+from nevis.nevis.filetools import Filetools
+
+logger = Filetools.get_logger(__name__)
 
 class ConfigTools:
 
@@ -7,6 +12,7 @@ class ConfigTools:
     def run_fpga_config_wizard(cls):
         
         if not os.path.isfile("nevis/config/fpga_config.json"):
+            logger.info("[NeVIS]: FPGA configuration file does not exist. Running FPGA configuration wizard...")
             print("[NeVIS]: FPGA configuration file does not exist. Running FPGA configuration wizard...")
             fpga_dict = {}
 
@@ -39,10 +45,8 @@ class ConfigTools:
             with open("nevis/config/fpga_config.json", "w") as json_file:
                 json.dump(fpga_dict, fp=json_file, indent=4)
             json_file.close()
-
         else:
-            print("[NeVIS]: FPGA configuration file already exists. Proceeding...")
-        return 1
+            logger.info("[NeVIS]: FPGA configuration file already exists. Proceeding...")
             
     @classmethod
     def create_model_config_file(cls, in_node_depths, out_node_depths, out_node_scales):
