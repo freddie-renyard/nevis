@@ -11,8 +11,13 @@ from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
 #import neuron_classes
 
-# Set up the logger
-logger = Filetools.get_logger(__name__)
+logging.basicConfig(
+            filename="nevis/logs/nevis.log",
+            format='%(asctime)s %(message)s',
+            filemode="w"
+        )
+logging.getLogger("logs/nevis.log").setLevel(logging.INFO)
+logger = logging.getLogger("logs/nevis.log")
 
 class NevisEnsembleNetwork(nengo.Network):
 
@@ -94,8 +99,6 @@ class NevisEnsembleNetwork(nengo.Network):
         #   yet to exist.
         # Add n_neurons, dimensions etc. to the model_config.json file. Compare these attributes on each
         # new object instantiation, and if any don't match, re-run the compilation process.
-
-        
 
         # Deletes the current model configuration file
         if compile_design:
