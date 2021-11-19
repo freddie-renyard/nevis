@@ -41,6 +41,8 @@ class NevisEnsembleNetwork(nengo.Network):
         If None, will use the eval_points associated with ``pre``.
     timeout : float or int, optional
         Number of seconds to wait for FPGA connection over UART
+    compile_design : bool
+        Whether to recompile and synthesise the given network. 
     label : str, optional (Default: None)
         A descriptive label for the connection.
     seed : int, optional (Default: None)
@@ -76,14 +78,17 @@ class NevisEnsembleNetwork(nengo.Network):
         transform=nengo.Default,
         eval_points=nengo.Default,
         timeout=2,
+        compile_design=True,
         label=None,
         seed=None,
         add_to_container=None,
         t_pstc=0.1275
     ):
         
-        # Create serial object
-        # TODO
+        # TODO Check compile_design param
+        # TODO Check whether the network params are the same as those passed to the object,
+        #   else recompile and synthesise the design. Do this via the JSON config file that is
+        #   yet to exist.
 
         self.input_dimensions = dimensions
         if dimensions != 1:
