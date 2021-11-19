@@ -171,7 +171,7 @@ if run_vivado == 'y':
 run_model = (input("\nWould you like to run the model alongside the FPGA's output? [y/n]: ") == 'y')
 model.monitor_spikes = False
 
-from nevis.serial_interface import run_serial_interface
+from nevis.proto_serial import run_serial_interface
 run_serial_interface(model=model, 
     run_model=run_model, 
     out_depth = (output_stage.n_w_man + output_stage.scale_w + output_stage.n_activ_extra + 1),
