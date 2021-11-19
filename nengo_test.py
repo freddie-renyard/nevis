@@ -15,7 +15,7 @@ def run_simple_fpga_model():
 
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
-            dimensions=1,
+            dimensions=2,
             compile_design=True
         )
 

@@ -4,10 +4,15 @@ from nengo.builder.signal import Signal
 from nengo.builder.operator import Copy, Reset, SimPyFunc
 import numpy as np
 import math
+import logging
 from nevis import neuron_classes
 from nevis import serial_link
 from nevis.config_tools import ConfigTools
+from nevis.filetools import Filetools
 #import neuron_classes
+
+# Set up the logger
+logger = Filetools.get_logger(__name__)
 
 class NevisEnsembleNetwork(nengo.Network):
 
@@ -98,8 +103,9 @@ class NevisEnsembleNetwork(nengo.Network):
 
         self.input_dimensions = dimensions
         if dimensions != 1:
+            logger.error("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
             print("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
-            # TODO Raise error apprpriately.
+
 
         # Set the output dimensions - currently only 1D is supported.
         self.output_dimensions = 1

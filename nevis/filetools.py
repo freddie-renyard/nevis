@@ -1,6 +1,22 @@
 import os
+import logging
 
 class Filetools:
+
+    @staticmethod
+    def get_logger(file_name, filemode='w'):
+        # Obtain raw filename
+        name_components = file_name.split(".")
+        filepath = "nevis/logs/" + name_components[-1] + ".log"
+
+        # Save the log file
+        logging.basicConfig(
+            filename=filepath,
+            format='%(asctime)s %(message)s',
+            filemode=filemode
+        )
+        return logging.getLogger(file_name)
+
 
     @staticmethod
     def combine_binary_params(list_0, list_1, verbose=False):
