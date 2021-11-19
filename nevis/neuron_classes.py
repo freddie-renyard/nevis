@@ -1,6 +1,7 @@
 from nevis.memory_compiler import Compiler
 import math
 import numpy as np
+import logging
 
 from nevis.filetools import Filetools
 """
@@ -24,6 +25,8 @@ whether the other neuron models e.g. Izhikevich neurons can be implemented
 with a change solely to the NAU. Otherwise, full drop in high level modules
 can be created specifically for each neuron.
 """
+
+logger = logging.getLogger("logs/nevis.log")
 
 class Encoder:
     
@@ -116,7 +119,7 @@ class Encoder:
     def save_params(self, index, n_r, running_mem_total=0):
 
         filename = "encoder_compiled" + str(index) + ".mem"
-        print("Saving gain and bias to binary .mem file as", filename + "............", end='')
+        logger.info("INFO: Saving gain and bias to binary .mem file as %s", filename)
         combined = Filetools.combine_binary_params(self.comp_gain_list, self.comp_bias_list)
         running_mem_total = Filetools.save_to_file(
             filename, 
@@ -125,7 +128,7 @@ class Encoder:
         )
 
         filename = "nau_compiled" + str(index) + ".mem"
-        print("Saving NAU start parameters to binary .mem file as", filename + "............", end='')
+        logger.info("INFO: Saving NAU start parameters to binary .mem file as %s", filename)
         combined = self.compile_nau_start_params(n_activ=self.n_dv_post, n_ref=n_r, n_neuron=self.n_neurons)
         running_mem_total = Filetools.save_to_file(
             filename, 

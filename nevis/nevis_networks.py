@@ -223,7 +223,7 @@ def compile_and_save_params(model, network):
         radix_g=comp_args["radix_encoder"],
         radix_b=comp_args["radix_encoder"],
         n_dv_post=comp_args["n_dv_post"],
-        verbose=False
+        verbose=True
     )
 
     # Compile an output node (Nevis - Synapses)

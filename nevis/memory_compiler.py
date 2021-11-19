@@ -2,6 +2,15 @@ import math
 import numpy as np
 from matplotlib import pyplot as plt, scale
 from numpy.lib.twodim_base import _trilu_indices_form_dispatcher
+import logging
+
+logging.basicConfig(
+            filename="nevis/logs/nevis.log",
+            format='%(asctime)s %(message)s',
+            filemode="w"
+        )
+logging.getLogger("logs/nevis.log").setLevel(logging.INFO)
+logger = logging.getLogger("logs/nevis.log")
 
 class Compiler:
 
@@ -40,9 +49,7 @@ class Compiler:
             The bit depth of the parameters in the list, after consideration
             of the bits needed to store the non-fractional part of the float.
         """
-        
-        print('')
-        print('Compiling list to desired fractional precision...')
+
         compiled_str = []
         int_bit_depth = 0
 
@@ -68,8 +75,8 @@ class Compiler:
 
         int_bit_depth = math.ceil(math.log2(max_int + 1)) + 1
 
-        print('Report: Whole Number Bit Depth - ' + str(int_bit_depth) + ' Fractional Bit Depth: ' + str(bin_places))
-        print('Report: Total Bit Depth: ' + str(int_bit_depth + bin_places))
+        logger.info('Report: Whole Number Bit Depth: %4f, Fractional Bit Depth: %4f', int_bit_depth, bin_places)
+        logger.info('Report: Total Bit Depth: %s', str(int_bit_depth + bin_places))
 
         i = 0
         for x in target_list:
@@ -113,10 +120,10 @@ class Compiler:
             compiled_str.append(final_number)
 
             if len(final_number) != total_bit_depth:
-                print("ERROR: Final Value is not equal to bit depth for neuron ", i)
+                logger.error("ERROR: Final Value is not equal to bit depth for neuron %i", i)
 
             if verbose:
-                print("Index: ", i, "Value: ", str(x), " --> ", str(final_number))
+                logger.info("INFO: Index: %i, Value: %.5f, --> %s", i, x, str(final_number))
                 i += 1
         
         return compiled_str, total_bit_depth
@@ -138,9 +145,6 @@ class Compiler:
         verbose: bool
             Whether to output a detailed output of the process to the terminal.
         """
-
-        print('')
-        print('Compiling list to desired floating-point precision...')
 
         compiled_str = []
 
@@ -242,8 +246,8 @@ class Compiler:
                     display_val = value*-1
                 else:
                     display_val = value
-                print("Index:", i, "Value:", x, "Mantissa:", display_val, "Exponent:", exponent_val)
-                print("Compiled Mantissa: ", mantissa_bin, "Compiled Exponent:", exponent_bin)
+                logger.info("Index: %i, Value: %.5f, Mantissa: %.5f, Exponent: %.5f", i, x, display_val, exponent_val)
+                logger.info("Compiled Mantissa: %s, Compiled Exponent: %s", mantissa_bin, exponent_bin)
             
             # Concatenate the two entries together
             concat_result = mantissa_bin + exponent_bin
@@ -274,48 +278,6 @@ class Compiler:
 
     @staticmethod
     def frac_to_truncated_bin(fraction, bin_places, is_neg=False):
-        
-        """ NEW IMPLEMENTATION
-        fraction = abs(fraction)
-        if fraction > 1.0:
-            fraction = 1.0
-            print("[COMPILER WARNING]: Truncation in mantissa representation has occured")
-
-        # Add an extra bit on to allow for compilation of the two's complement -max value 
-        # condition. TODO Adapt the compile_to_float method to take advantage of this and
-        # test it throrughly
-        if is_neg:
-            max_val = 2**bin_places + 1
-        else: 
-            max_val = 2**bin_places
-        
-        # Calculate the step for each threshold
-        step = 1.0 / (max_val-1)
-
-        # Compute thresholds (the ideal fixed point values for each given representation)
-        thresholds = []
-        for i in range(0, max_val):
-            thresholds.append(i*step)
-        
-        # Compute the middle of each threshold (used for rounding)
-        bin_frac = 0
-        thresh_mid = ((thresholds[1] - thresholds[0]) / 2.0)
-
-        for i in range(0, max_val):
-            thresh_div = thresh_mid + thresholds[i]
-            # Test where the fraction is in comparison to thresholds defined
-            if fraction > thresholds[i+1]:
-                pass
-            elif fraction < thresh_div:
-                # Round value down to lower value
-                bin_frac = i
-                break
-            else:
-                # Round value up to higher value
-                bin_frac = i+1
-                break
-        
-        """
         
         bin_frac = 0
         overflow_flag = False
@@ -426,15 +388,12 @@ class Compiler:
             max_exponent += 1
             print(max_val)
 
-        print(max_exponent)
-
         min_exponent = 0
         while min_val <= 1:
             min_val *= 2
             min_exponent += 1
             print(min_val)
 
-        print("Max exponent:", -1*max_exponent, "Min exponent:", -1*min_exponent)
         return int((max_exponent + min_exponent)/2)
 
     @staticmethod
@@ -485,7 +444,6 @@ class Compiler:
         
         bin_places = 4
 
-
         for i in range(len(test_list)):
             results[i], results_debug[i], flags_debug[i] = cls.frac_to_truncated_bin(test_list[i], bin_places, is_neg=True)
 
@@ -495,7 +453,6 @@ class Compiler:
         for x,y in zip(test_list, results_debug):
             
             y = float(y) / scale_factor
-            print(x,y)
             rmse_sum += (y - x)**2
         
         from math import sqrt
