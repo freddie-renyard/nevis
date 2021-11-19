@@ -81,6 +81,8 @@ class NevisEnsembleNetwork(nengo.Network):
     connection : `nengo.Connection`
         The connection object used to configure the output connection
         implementation on the FPGA board.
+    compile_design : bool
+        Whether to compile the model from scratch.
     """
 
     def __init__(
@@ -109,6 +111,7 @@ class NevisEnsembleNetwork(nengo.Network):
         # Deletes the current model configuration file
         if compile_design:
             ConfigTools.purge_model_config()
+        self.compile_design = compile_design
 
         if verbose:
             logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -162,110 +165,110 @@ def compile_and_save_params(model, network):
 
     Again, implementation takes details from the existing backend.
     """
-    
-    # Generate the model which the parameters will be taken from
-    param_model = nengo.builder.Model(dt=model.dt)
-    nengo.builder.network.build_network(param_model, network)
+    if network.compile_design:
+        # Generate the model which the parameters will be taken from
+        param_model = nengo.builder.Model(dt=model.dt)
+        nengo.builder.network.build_network(param_model, network)
 
-    # Gather simulation parameters - identical across all ensembles
-    sim_args = {}
-    sim_args["dt"] = model.dt
+        # Gather simulation parameters - identical across all ensembles
+        sim_args = {}
+        sim_args["dt"] = model.dt
 
-    # Gather ensemble parameters - vary between ensembles
-    ens_args = {}
-    ens_args["n_neurons"] = network.ensemble.n_neurons
-    ens_args["input_dimensions"] = network.input_dimensions
-    ens_args["output_dimensions"] = network.output_dimensions
-    ens_args["bias"] = param_model.params[network.ensemble].bias
-    ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc / sim_args["dt"]
+        # Gather ensemble parameters - vary between ensembles
+        ens_args = {}
+        ens_args["n_neurons"] = network.ensemble.n_neurons
+        ens_args["input_dimensions"] = network.input_dimensions
+        ens_args["output_dimensions"] = network.output_dimensions
+        ens_args["bias"] = param_model.params[network.ensemble].bias
+        ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc / sim_args["dt"]
 
-    # scaled_encoders = gain * encoders
-    # TODO this is computationally wasteful, but the way that the Encoder 
-    # object is designed at present makes the code below the most readable 
-    # solution. Change the Encoder so that this is not the case.
-    ens_args["encoders"] = param_model.params[network.ensemble].encoders
-    ens_args["gain"] = param_model.params[network.ensemble].gain
+        # scaled_encoders = gain * encoders
+        # TODO this is computationally wasteful, but the way that the Encoder 
+        # object is designed at present makes the code below the most readable 
+        # solution. Change the Encoder so that this is not the case.
+        ens_args["encoders"] = param_model.params[network.ensemble].encoders
+        ens_args["gain"] = param_model.params[network.ensemble].gain
 
-    # Gather refractory period
-    ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
+        # Gather refractory period
+        ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
 
-    # Tool for painlessly investigating the parameters of Nengo objects
-    #l = dir(param_model.params[network.connection])
-    #print(l)
+        # Tool for painlessly investigating the parameters of Nengo objects
+        #l = dir(param_model.params[network.connection])
+        #print(l)
 
-    conn_args = {}
-    conn_args["weights"] = param_model.params[network.connection].weights
-    conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
-    conn_args["pstc_scale"] = 1.0 - math.exp(-1 / conn_args["t_pstc"]) # Timestep has been normalised to 1
+        conn_args = {}
+        conn_args["weights"] = param_model.params[network.connection].weights
+        conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
+        conn_args["pstc_scale"] = 1.0 - math.exp(-1 / conn_args["t_pstc"]) # Timestep has been normalised to 1
 
-    # Define the compiler params. TODO write an optimiser function to
-    # define these params automatically.
-    comp_args = {}
-    comp_args["radix_encoder"] = 8
-    comp_args["bits_input"] = 8
-    comp_args["radix_input"] = comp_args["bits_input"] - 1
-    comp_args["radix_weights"] = 6
-    comp_args["n_dv_post"] = 10
-    comp_args["n_activ_extra"] = 6
-    comp_args["min_float_val"] = 1*2**-20
+        # Define the compiler params. TODO write an optimiser function to
+        # define these params automatically.
+        comp_args = {}
+        comp_args["radix_encoder"] = 8
+        comp_args["bits_input"] = 8
+        comp_args["radix_input"] = comp_args["bits_input"] - 1
+        comp_args["radix_weights"] = 6
+        comp_args["n_dv_post"] = 10
+        comp_args["n_activ_extra"] = 6
+        comp_args["min_float_val"] = 1*2**-20
 
-    # TODO SCALE ALL OF THE TEMPORAL PARAMS BY DT
+        # TODO SCALE ALL OF THE TEMPORAL PARAMS BY DT
 
-    # Compile an ensemble (NeVIS - Encoder) TODO ensure that this distinction is correct
-    input_hardware = neuron_classes.Encoder_Floating(
-        n_neurons=ens_args["n_neurons"],
-        gain_list=ens_args["gain"],
-        encoder_list=ens_args["encoders"],
-        bias_list=ens_args["bias"],
-        t_rc=ens_args["t_rc"],
-        n_x=comp_args["bits_input"],
-        radix_x=comp_args["radix_input"],
-        radix_g=comp_args["radix_encoder"],
-        radix_b=comp_args["radix_encoder"],
-        n_dv_post=comp_args["n_dv_post"],
-        verbose=True
-    )
+        # Compile an ensemble (NeVIS - Encoder) TODO ensure that this distinction is correct
+        input_hardware = neuron_classes.Encoder_Floating(
+            n_neurons=ens_args["n_neurons"],
+            gain_list=ens_args["gain"],
+            encoder_list=ens_args["encoders"],
+            bias_list=ens_args["bias"],
+            t_rc=ens_args["t_rc"],
+            n_x=comp_args["bits_input"],
+            radix_x=comp_args["radix_input"],
+            radix_g=comp_args["radix_encoder"],
+            radix_b=comp_args["radix_encoder"],
+            n_dv_post=comp_args["n_dv_post"],
+            verbose=True
+        )
 
-    # Compile an output node (Nevis - Synapses)
-    # TODO Check whether weights are prescaled with pstc_scale value (if not default to one)
-    output_hardware = neuron_classes.Synapses_Floating(
-        n_neurons=ens_args["n_neurons"],
-        pstc_scale=conn_args["pstc_scale"],
-        decoders_list=conn_args["weights"][0], # Take the zeroeth dimension of this array as it is
-        # a dot product of the decoders and the encoders of the next section (as this dot product
-        # is used for hardware memory optimisation)
-        encoders_list=[1], # Indicates a positive weight addition
-        n_activ_extra=comp_args["n_activ_extra"],
-        radix_w=comp_args["radix_weights"],
-        minimum_val=comp_args["min_float_val"],
-        verbose=True
-    )
+        # Compile an output node (Nevis - Synapses)
+        # TODO Check whether weights are prescaled with pstc_scale value (if not default to one)
+        output_hardware = neuron_classes.Synapses_Floating(
+            n_neurons=ens_args["n_neurons"],
+            pstc_scale=conn_args["pstc_scale"],
+            decoders_list=conn_args["weights"][0], # Take the zeroeth dimension of this array as it is
+            # a dot product of the decoders and the encoders of the next section (as this dot product
+            # is used for hardware memory optimisation)
+            encoders_list=[1], # Indicates a positive weight addition
+            n_activ_extra=comp_args["n_activ_extra"],
+            radix_w=comp_args["radix_weights"],
+            minimum_val=comp_args["min_float_val"],
+            verbose=True
+        )
 
-    # Save the compiled models's parameters in a JSON file
-    ConfigTools.create_model_config_file(
-        in_node_depths= [input_hardware.n_x],
-        out_node_depths= [output_hardware.n_w_man + output_hardware.scale_w + output_hardware.n_activ_extra + 1],
-        out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
-    )
+        # Save the compiled models's parameters in a JSON file
+        ConfigTools.create_model_config_file(
+            in_node_depths= [input_hardware.n_x],
+            out_node_depths= [output_hardware.n_w_man + output_hardware.scale_w + output_hardware.n_activ_extra + 1],
+            out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
+        )
 
-    ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], sim_args["dt"])
-    t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
+        ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], sim_args["dt"])
+        t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
 
-    compiled_model = [input_hardware, output_hardware]
-    refractory_params = [n_r, ref_period, t_rc_hardware]
+        compiled_model = [input_hardware, output_hardware]
+        refractory_params = [n_r, ref_period, t_rc_hardware]
 
-    # Save the parameters as a Verilog header file.
-    Filetools.compile_and_save_header(
-        filename = 'model_params.vh', 
-        full_model = compiled_model, 
-        global_params = refractory_params
-    )
+        # Save the parameters as a Verilog header file.
+        Filetools.compile_and_save_header(
+            filename = 'model_params.vh', 
+            full_model = compiled_model, 
+            global_params = refractory_params
+        )
 
-    # Save the compiled parameters in the appropriate files
-    running_mem_total = input_hardware.save_params(0, n_r=n_r)
-    running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
+        # Save the compiled parameters in the appropriate files
+        running_mem_total = input_hardware.save_params(0, n_r=n_r)
+        running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
 
-    Filetools.report_memory_usage(running_mem_total)
+        Filetools.report_memory_usage(running_mem_total)
     
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
