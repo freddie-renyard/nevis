@@ -6,6 +6,7 @@ import numpy as np
 import math
 from nevis import neuron_classes
 from nevis import serial_link
+from nevis.config_tools import ConfigTools
 #import neuron_classes
 
 class NevisEnsembleNetwork(nengo.Network):
@@ -89,6 +90,8 @@ class NevisEnsembleNetwork(nengo.Network):
         # TODO Check whether the network params are the same as those passed to the object,
         #   else recompile and synthesise the design. Do this via the JSON config file that is
         #   yet to exist.
+
+        ConfigTools.run_fpga_config_wizard()
 
         self.input_dimensions = dimensions
         if dimensions != 1:
