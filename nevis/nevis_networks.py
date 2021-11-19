@@ -88,6 +88,10 @@ class NevisEnsembleNetwork(nengo.Network):
         #   else recompile and synthesise the design. Do this via the JSON config file that is
         #   yet to exist.
 
+        # Deletes the current model configuration file
+        if compile_design:
+            ConfigTools.purge_model_config()
+
         ConfigTools.run_fpga_config_wizard()
 
         self.input_dimensions = dimensions

@@ -76,3 +76,8 @@ class ConfigTools:
         file.close()
         return json_dict
             
+    @staticmethod
+    def purge_model_config():
+        filepath = "nevis/config/model_config.json"
+        if os.path.isfile(filepath):
+            os.remove(filepath)
