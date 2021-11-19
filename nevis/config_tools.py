@@ -43,6 +43,28 @@ class ConfigTools:
         else:
             print("[NeVIS]: FPGA configuration file already exists. Proceeding...")
         return 1
+            
+    @classmethod
+    def create_model_config_file(cls, in_node_depths, out_node_depths, out_node_scales):
+        """ Saves compiled model's interfacing parameters into a JSON config file.
+        Parameters
+        ----------
+        in_node_depths : [int]
+            A list of integers denoting the bit depths of the inputs.
+        out_node_depths : [int]
+            A list of integers denoting the bit depths of the outputs.
+        out_node_scales : [int]
+            A list of integers denoting the absolute scale factors of the outputs.
+        """
+        
+        model_dict = {}
+        model_dict["in_node_depths"] = in_node_depths
+        model_dict["out_node_depths"] = out_node_depths
+        model_dict["out_node_scales"] = out_node_scales
+
+        with open("nevis/config/model_config.json", "w") as json_file:
+            json.dump(model_dict, fp=json_file, indent=4)
+        json_file.close()
 
     @staticmethod
     def load_data(filename):

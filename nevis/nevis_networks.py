@@ -219,16 +219,23 @@ def compile_and_save_params(model, network):
         verbose=True
     )
 
+    # Save the compiled models's parameters in a JSON file
+    ConfigTools.create_model_config_file(
+        in_node_depths= [input_hardware.n_x],
+        out_node_depths= [output_hardware.n_w_man + output_hardware.scale_w + output_hardware.n_activ_extra + 1],
+        out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
+    )
+    
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
 
     # TODO Perform hardware checks before preceding with FPGA build.
+    
+    # Extract relevant params
+    compile_and_save_params(model, network)
 
     # Instantiate a serial link object
     serial_port = serial_link.FPGAPort()
-
-    # Extract relevant params
-    compile_and_save_params(model, network)
 
     # Define input signal and assign it to the model's input
     input_sig = Signal(np.zeros(network.input_dimensions), name="input")

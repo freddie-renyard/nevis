@@ -31,7 +31,7 @@ class FPGAPort:
     self.link_addr
         The serial link object used for data tx/rx.
     """
-    def __init__(self, input_word_depth, output_word_depth, output_scale):
+    def __init__(self):
         
         ConfigTools.run_fpga_config_wizard()
         
@@ -39,10 +39,14 @@ class FPGAPort:
         serial_dict = ConfigTools.load_data("fpga_config.json")
         self.port = serial_dict["serial_addr"]
         self.baud_rate = serial_dict["baud_rate"]
+
+        model_dict = ConfigTools.load_data("model_config.json")
+        self.input_depths = model_dict["in_node_depths"]
+        self.output_depths = model_dict["out_node_depths"]
+        self.output_scales = model_dict["out_node_scales"]
         
         # Define an empty link address
         self.link_addr = 0
-        pass
 
     def begin_serial(self, timeout):
         print("[NeVIS]: Attempting to open serial port...")
