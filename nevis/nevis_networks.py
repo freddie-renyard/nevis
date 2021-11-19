@@ -95,6 +95,8 @@ class NevisEnsembleNetwork(nengo.Network):
         # Add n_neurons, dimensions etc. to the model_config.json file. Compare these attributes on each
         # new object instantiation, and if any don't match, re-run the compilation process.
 
+        
+
         # Deletes the current model configuration file
         if compile_design:
             ConfigTools.purge_model_config()

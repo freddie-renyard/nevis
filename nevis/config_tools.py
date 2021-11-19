@@ -2,7 +2,7 @@ import logging
 import os
 import json
 
-from nevis.nevis.filetools import Filetools
+from nevis.filetools import Filetools
 
 logger = Filetools.get_logger(__name__)
 

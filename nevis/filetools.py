@@ -52,6 +52,13 @@ class Filetools:
 
         return combined
 
+    @staticmethod
+    def purge_directory(dir_path):
+        """ Purges all files in a directory. Does not work for subdirectories.
+        """
+        for f in os.listdir(dir_path):
+            os.remove(os.path.join(dir_path, f))
+
     @classmethod
     def save_to_file(cls, filename, target_list, running_mem_total=0):
         """ Saves a specified list to a memory file in the working directory with entry comments.
