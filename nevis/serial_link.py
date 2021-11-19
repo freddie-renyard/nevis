@@ -1,5 +1,6 @@
 import serial
 import time
+from nevis.config_tools import ConfigTools
 
 class FPGAPort:
     """An object which is used to handle serial communication to the target FPGA.
@@ -30,11 +31,15 @@ class FPGAPort:
     self.link_addr
         The serial link object used for data tx/rx.
     """
-    def __init__(self, port, baud, input_word_depth, output_word_depth, output_scale):
-        print("FPGA Port says hello world...")
-        self.port = port
-        self.baud_rate = baud
-
+    def __init__(self, input_word_depth, output_word_depth, output_scale):
+        
+        ConfigTools.run_fpga_config_wizard()
+        
+        # Open the json file with all the serial parameters
+        serial_dict = ConfigTools.load_data("fpga_config.json")
+        self.port = serial_dict["serial_addr"]
+        self.baud_rate = serial_dict["baud_rate"]
+        
         # Define an empty link address
         self.link_addr = 0
         pass

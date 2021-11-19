@@ -15,8 +15,7 @@ def run_simple_fpga_model():
 
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
-            dimensions=1,
-            fpga_serial_addr="/dev/tty.usbserial-FT4ZS6I31",
+            dimensions=1
         )
 
         nengo.Connection(input_node, fpga_ens.input)

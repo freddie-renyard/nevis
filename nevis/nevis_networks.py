@@ -17,8 +17,6 @@ class NevisEnsembleNetwork(nengo.Network):
     An ensemble to be run on the FPGA. 
     Parameters
     ----------
-    fpga_serial_addr : str
-        The serial port of the FPGA, in the format "/dev/tty.<address here>"
     n_neurons : int
         The number of neurons.
     dimensions : int
@@ -72,7 +70,6 @@ class NevisEnsembleNetwork(nengo.Network):
 
     def __init__(
         self,
-        fpga_serial_addr,
         n_neurons,
         dimensions,
         function=nengo.Default,
@@ -108,7 +105,6 @@ class NevisEnsembleNetwork(nengo.Network):
 
         super().__init__(label, seed, add_to_container)
 
-        self.serial_addr = fpga_serial_addr
         self.timeout = timeout
 
         # Set up a dummy model with the input and output Nodes used to interface

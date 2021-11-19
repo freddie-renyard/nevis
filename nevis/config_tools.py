@@ -3,8 +3,9 @@ import json
 
 class ConfigTools:
 
-    def run_fpga_config_wizard():
-
+    @classmethod
+    def run_fpga_config_wizard(cls):
+        
         if not os.path.isfile("nevis/config/fpga_config.json"):
             print("[NeVIS]: FPGA configuration file does not exist. Running FPGA configuration wizard...")
             fpga_dict = {}
@@ -37,5 +38,19 @@ class ConfigTools:
             
             with open("nevis/config/fpga_config.json", "w") as json_file:
                 json.dump(fpga_dict, fp=json_file, indent=4)
+            json_file.close()
+
         else:
             print("[NeVIS]: FPGA configuration file already exists. Proceeding...")
+        return 1
+
+    @staticmethod
+    def load_data(filename):
+        """Loads data from a file in the config directory.
+        """
+        filepath = "nevis/config/" + filename
+        file = open(filepath)
+        json_dict = json.load(file)
+        file.close()
+        return json_dict
+            
