@@ -12,6 +12,8 @@ from nevis.filetools import Filetools
 #import neuron_classes
 import sys
 
+from nevis.serial_link import FPGAPort
+
 logging.basicConfig(
             filename="nevis/logs/nevis.log",
             format='%(asctime)s %(message)s',
@@ -293,7 +295,7 @@ def build_NevisEnsembleNetwork(model, network):
     model.add_op(  
         SimPyFunc(
             output=output_sig,
-            fn=partial(serial_link.serial_comm_func, net=network, dt=model.dt),
+            fn=partial(serial_port.serial_comm_func, net=network, dt=model.dt),
             t=model.time,
             x=serial_port_input_sig
         )

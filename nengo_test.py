@@ -11,7 +11,7 @@ def input_func(t):
 def run_simple_fpga_model():
     with model:
 
-        input_node = nengo.Node(input_func)
+        input_node = nengo.Node(0)
 
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
