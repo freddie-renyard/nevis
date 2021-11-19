@@ -1,9 +1,11 @@
+from functools import partial
 import nengo
 from nengo.builder.signal import Signal
-from nengo.builder.operator import Reset
+from nengo.builder.operator import Copy, Reset, SimPyFunc
 import numpy as np
 import math
 from nevis import neuron_classes
+from nevis import serial_link
 #import neuron_classes
 
 class NevisEnsembleNetwork(nengo.Network):
@@ -218,6 +220,9 @@ def build_NevisEnsembleNetwork(model, network):
 
     # TODO Perform hardware checks before preceding with FPGA build.
 
+    # Instantiate a serial link object
+    serial_port = serial_link.FPGAPort()
+
     # Extract relevant params
     compile_and_save_params(model, network)
 
@@ -236,4 +241,29 @@ def build_NevisEnsembleNetwork(model, network):
 
     # Build the output connection into the model
     if network.connection.synapse is not None:
-        model.build(network.conenction.synapse, output_sig)
+        model.build(network.connection.synapse, output_sig)
+
+    # Combine the data ports to allow for the serial interface to 
+    # communicate with Nengo
+    serial_port_input_sig = Signal(
+        np.zeros(network.input_dimensions + network.output_dimensions),
+        name="serial_port_input"
+    )
+
+    # Copy the tx data to the input of the model in Nengo
+    model.add_op(
+        Copy(
+            input_sig,
+            serial_port_input_sig,
+            dst_slice=slice(0, network.input_dimensions)
+        )
+    )
+
+    model.add_op(  
+        SimPyFunc(
+            output=output_sig,
+            fn=partial(serial_link.serial_comm_func, net=network, dt=model.dt),
+            t=model.time,
+            x=serial_port_input_sig
+        )
+    )
