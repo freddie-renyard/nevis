@@ -3,6 +3,7 @@ from nevis.memory_compiler import Compiler # Import the compiler code
 from nevis.filetools import Filetools
 from nevis.neuron_classes import Encoder, Encoder_Floating, Synapses, Synapses_Floating
 from nevis.global_tools import Global_Tools
+from nevis.config_tools import ConfigTools
 import os
 from subprocess import call
 
@@ -170,6 +171,13 @@ if run_vivado == 'y':
 # there as the drivers are incompatible with macOS. 
 run_model = (input("\nWould you like to run the model alongside the FPGA's output? [y/n]: ") == 'y')
 model.monitor_spikes = False
+
+# Save the compiled models's parameters in a JSON file
+ConfigTools.create_model_config_file(
+    in_node_depths= [encoder_A.n_x],
+    out_node_depths= [output_stage.n_w_man + output_stage.scale_w + output_stage.n_activ_extra + 1],
+    out_node_scales= [output_stage.n_w_man - 1 + output_stage.scale_w + output_stage.n_activ_extra]
+)
 
 from nevis.proto_serial import run_serial_interface
 run_serial_interface(model=model, 
