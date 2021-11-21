@@ -166,6 +166,10 @@ def compile_and_save_params(model, network):
     Again, implementation takes details from the existing backend.
     """
     if network.compile_design:
+        
+        # Purge the compilation cache
+        Filetools.purge_directory("nevis/file_cache")
+
         # Generate the model which the parameters will be taken from
         param_model = nengo.builder.Model(dt=model.dt)
         nengo.builder.network.build_network(param_model, network)
