@@ -1,11 +1,16 @@
 #!/bin/bash
 # This script is run on the host machine when the remote Vivado host is logged into over SSH.
+# 1st argument - path to Vivado executable
+# 2nd argument - path to project file (.xpr)
 
 echo "Attempting Vivado run..."
-source /home/freddie/Applications/Vivado/2020.2/settings64.sh vivado
-vivado -mode tcl
+source $1
 
-open_project {/home/freddie/Desktop/Alchitry Labs Project Things/Verilog Projects/NEF_IMPL_PROTO/au_base_project.xpr}
+# Start vivado, passing the project filepath as an argument.
+vivado -mode tcl -tclargs $2
+
+set filepath [lindex $argv 0]
+open_project $filepath
 reset_run synth_1
 launch_runs synth_1 -jobs 8
 wait_on_run synth_1

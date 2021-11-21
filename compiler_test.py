@@ -5,7 +5,7 @@ from nevis.neuron_classes import Encoder, Encoder_Floating, Synapses, Synapses_F
 from nevis.global_tools import Global_Tools
 from nevis.config_tools import ConfigTools
 import os
-from subprocess import call
+from subprocess import call, check_call
 
 def target_function(x):
     """The function to compute between A and B"""
@@ -162,9 +162,15 @@ if run_vivado == 'y':
     # Call the script that transfers the compiled files to 
     # the Vivado server machine
     cwd = os.getcwd()
-    
-    script_path = cwd + "/nevis/File_transfer.sh"
-    call(script_path)
+
+    server_config = ConfigTools.load_data("server_config.json")
+
+    server_path = server_config["proto_dir"]
+    server_addr = server_config["ssh_addr"]
+    vivado_loc = server_config["vivado_loc"]
+    project_path = server_config["project_proto_loc"]
+    script_path = cwd + "/nevis/File_transfer.sh %s %s %s %s"
+    check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)
 
 # Open the serial interface. The board will need to be 
 # plugged in to the Vivado machine and programmed from 

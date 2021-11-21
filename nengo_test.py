@@ -16,7 +16,7 @@ def run_simple_fpga_model():
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
             dimensions=1,
-            compile_design=False
+            compile_design=True
         )
         
         nengo.Connection(input_node, fpga_ens.input)
