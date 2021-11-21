@@ -14,19 +14,8 @@ class FPGAPort:
 
     Parameters
     ----------
-    port : str
-        The '/dev/*' location of the board in question. TODO this will need to be tested
-        on a non-POSIX machine.
-    baud : int
-        The desired baud rate of the serial communication. This is compiled into the FPGA's
-        design when the synthesis tools are run, and so is present in the config file.
-    input_word_depth : [int]
-        The bit depth of the input to the model. TODO develop for multiple dimensions.
-    output_word_depth : [int]
-        The bit depth of the output of the mode. TODO develop for multiple dimensions.
-    output_scale : [int]
-        The scale factor of the output word. TODO ensure that the transform argument is
-        accounted for here.
+    timeout : int
+        The number of seconds to wait for a board connection.
 
     Attributes
     ----------
@@ -37,7 +26,7 @@ class FPGAPort:
     self.link_addr
         The serial link object used for data tx/rx.
     """
-    def __init__(self):
+    def __init__(self, timeout):
         
         ConfigTools.run_fpga_config_wizard()
         
@@ -56,7 +45,7 @@ class FPGAPort:
         # Define an empty link address
         self.link_addr = 0
 
-        self.begin_serial(5)
+        self.begin_serial(timeout)
 
     def begin_serial(self, timeout):
 
@@ -73,11 +62,12 @@ class FPGAPort:
                 self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005)
                 logger.info(('INFO: Opened serial port to device at' + self.link_addr.name))
             except:
-                logger.info(('INFO: Connection failed. Re-attempting...attempts: '+ str(attempts)))
+                if max_attempts != 0:
+                    logger.info(('INFO: Connection failed. Re-attempting...attempts: '+ str(attempts)))
                 attempts += 1
                 time.sleep(rest_interval)
 
-            if attempts >= max_attempts:
+            if attempts >= max_attempts and max_attempts != 0:
                 logger.error(("ERROR: Serial connection to" + self.port + " failed."))
                 print("[NeVIS]: ERROR: Serial connection to", self.port, " failed.")
                 break

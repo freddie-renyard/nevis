@@ -13,6 +13,7 @@ from nevis.memory_compiler import Compiler
 import os
 import sys
 from subprocess import check_call
+from nevis.global_tools import Global_Tools
 
 from nevis.serial_link import FPGAPort
 
@@ -187,6 +188,10 @@ def compile_and_save_params(model, network):
         ens_args["bias"] = param_model.params[network.ensemble].bias
         ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc / sim_args["dt"]
 
+        n_value = 16 #16 this is t_rc after scaling by dt
+        ens_args["t_rc"] = Global_Tools.inverse_rc(n_value, model.dt) # membrane RC time constant
+        ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
+
         # scaled_encoders = gain * encoders
         # TODO this is computationally wasteful, but the way that the Encoder 
         # object is designed at present makes the code below the most readable 
@@ -204,7 +209,10 @@ def compile_and_save_params(model, network):
         conn_args = {}
         conn_args["weights"] = param_model.params[network.connection].weights
         conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
-        conn_args["pstc_scale"] = 1.0 - math.exp(-1 / conn_args["t_pstc"]) # Timestep has been normalised to 1
+        n_value = 128 # Produces a t_pstc of 0.1275 (4sf) 
+        conn_args["t_pstc"] = Global_Tools.inverse_pstc(n_value, model.dt) # post-synaptic time constant
+
+        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"]) # Timestep has been normalised to 1
 
         # Define the compiler params. TODO write an optimiser function to
         # define these params automatically.
@@ -216,8 +224,6 @@ def compile_and_save_params(model, network):
         comp_args["n_dv_post"] = 10
         comp_args["n_activ_extra"] = 6
         comp_args["min_float_val"] = 1*2**-20
-
-        # TODO SCALE ALL OF THE TEMPORAL PARAMS BY DT
 
         # Compile an ensemble (NeVIS - Encoder) TODO ensure that this distinction is correct
         input_hardware = neuron_classes.Encoder_Floating(
@@ -256,7 +262,7 @@ def compile_and_save_params(model, network):
             out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
         )
 
-        ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], sim_args["dt"])
+        ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], 1)
         t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
 
         compiled_model = [input_hardware, output_hardware]
@@ -286,8 +292,8 @@ def compile_and_save_params(model, network):
         vivado_loc = server_config["vivado_loc"]
         project_path = server_config["project_loc"]
         script_path = cwd + "/nevis/File_transfer.sh %s %s %s %s"
-        check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)  
-    
+        check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)
+
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
 
@@ -296,8 +302,13 @@ def build_NevisEnsembleNetwork(model, network):
     # Extract relevant params
     compile_and_save_params(model, network)
 
-    # Instantiate a serial link object
-    serial_port = serial_link.FPGAPort()
+    # Instantiate a serial link object - no timeout if the model is being compiled.
+    if network.compile_design:
+        timeout=0
+    else:
+        timeout=10
+    
+    serial_port = serial_link.FPGAPort(timeout)
 
     # Define input signal and assign it to the model's input
     input_sig = Signal(np.zeros(network.input_dimensions), name="input")

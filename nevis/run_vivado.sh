@@ -8,6 +8,7 @@ source $1
 
 # Start vivado, passing the project filepath as an argument.
 vivado -mode tcl -tclargs $2
+exit
 
 set filepath [lindex $argv 0]
 open_project $filepath
@@ -18,4 +19,3 @@ launch_runs impl_1 -to_step write_bitstream -jobs 8
 wait_on_run impl_1
 wait_on_run write_bitstream
 exit
-echo "Finished!!"
