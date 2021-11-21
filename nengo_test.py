@@ -1,5 +1,6 @@
 import nengo
 from nengo.network import Network
+from nevis.global_tools import Global_Tools
 from nevis.nevis_networks import NevisEnsembleNetwork
 import numpy as np
 
@@ -16,20 +17,26 @@ def run_simple_fpga_model():
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
             dimensions=1,
-            compile_design=True
+            compile_design=True,
+            tau_rc=Global_Tools.inverse_rc(16, 0.001)
         )
         
         nengo.Connection(input_node, fpga_ens.input)
         #nengo.Connection(fpga_ens.output, fpga_ens.input)
         
-        a = nengo.Ensemble(n_neurons=50, dimensions=1)
+        a = nengo.Ensemble(n_neurons=50, 
+            dimensions=1, 
+            neuron_type=nengo.neurons.LIF(Global_Tools.inverse_rc(8, 0.001))
+        )
         nengo.Connection(input_node, a)
 
 # Define, build and run a default Nengo network
 def run_default_model():
     with model:
         stim = nengo.Node([0])
-        a = nengo.Ensemble(n_neurons=50, dimensions=1)
+        a = nengo.Ensemble(n_neurons=50, 
+            dimensions=1
+        )
         nengo.Connection(stim, a)
 
 model = nengo.Network()

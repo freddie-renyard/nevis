@@ -37,6 +37,8 @@ class NevisEnsembleNetwork(nengo.Network):
     dimensions : int
         The number of representational dimensions. Under current
         implementation, 1 is the only valid input.
+    tau_rc : float
+        The time constant of the LIF membrane.
     function : callable or 
                optional (Default: None)
         Function to compute across the connection. 
@@ -91,6 +93,7 @@ class NevisEnsembleNetwork(nengo.Network):
         self,
         n_neurons,
         dimensions,
+        tau_rc=0.016,
         function=nengo.Default,
         transform=nengo.Default,
         eval_points=nengo.Default,
@@ -128,8 +131,9 @@ class NevisEnsembleNetwork(nengo.Network):
         # Set the output dimensions - currently only 1D is supported.
         self.output_dimensions = 1
         
-        self.neuron_type = nengo.neurons.LIF()
         self.t_pstc = t_pstc
+        self.tau_rc = tau_rc
+        self.neuron_type = nengo.neurons.LIF(self.tau_rc)
 
         self.seed = seed
 
@@ -146,7 +150,7 @@ class NevisEnsembleNetwork(nengo.Network):
             self.ensemble = nengo.Ensemble(
                 n_neurons   = n_neurons,
                 dimensions  = self.input_dimensions,
-                neuron_type = nengo.neurons.LIF(),
+                neuron_type = self.neuron_type,
                 eval_points = eval_points,
                 label       = "Dummy Ensemble"
             )
@@ -187,11 +191,10 @@ def compile_and_save_params(model, network):
         ens_args["input_dimensions"] = network.input_dimensions
         ens_args["output_dimensions"] = network.output_dimensions
         ens_args["bias"] = param_model.params[network.ensemble].bias
-        ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc / sim_args["dt"]
+        ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc
 
-        n_value = 16 #16 this is t_rc after scaling by dt
-        ens_args["t_rc"] = Global_Tools.inverse_rc(n_value, model.dt) # membrane RC time constant
         ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
+        logger.info(dict(ens_args))
 
         # scaled_encoders = gain * encoders
         # TODO this is computationally wasteful, but the way that the Encoder 
@@ -209,9 +212,7 @@ def compile_and_save_params(model, network):
 
         conn_args = {}
         conn_args["weights"] = param_model.params[network.connection].weights
-        conn_args["t_pstc"] = network.t_pstc / sim_args["dt"]
-        n_value = 128 # Produces a t_pstc of 0.1275 (4sf) 
-        conn_args["t_pstc"] = Global_Tools.inverse_pstc(n_value, model.dt) # post-synaptic time constant
+        conn_args["t_pstc"] = (network.t_pstc / 16) / sim_args["dt"]
 
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"]) # Timestep has been normalised to 1
 
