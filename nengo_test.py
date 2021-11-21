@@ -14,12 +14,14 @@ def run_simple_fpga_model():
 
         input_node = nengo.Node(input_func)
 
-        tau_rc = Global_Tools.inverse_rc(16, 0.001)
+        t_pstc = Global_Tools.inverse_pstc(128, 0.001)
+        tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
             dimensions=1,
             compile_design=True,
+            t_pstc=t_pstc,
             tau_rc=tau_rc
         )
         
@@ -28,9 +30,9 @@ def run_simple_fpga_model():
         
         a = nengo.Ensemble(n_neurons=50, 
             dimensions=1, 
-            neuron_type=nengo.neurons.LIF(Global_Tools.inverse_rc(8, 0.001))
+            neuron_type=nengo.neurons.LIF(tau_rc)
         )
-        nengo.Connection(input_node, a, synapse=tau_rc)
+        nengo.Connection(input_node, a, synapse=t_pstc)
 
 # Define, build and run a default Nengo network
 def run_default_model():
