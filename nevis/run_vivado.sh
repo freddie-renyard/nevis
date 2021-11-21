@@ -8,7 +8,6 @@ source $1
 
 # Start vivado, passing the project filepath as an argument.
 vivado -mode tcl -tclargs $2
-exit
 
 set filepath [lindex $argv 0]
 open_project $filepath

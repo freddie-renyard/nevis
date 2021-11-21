@@ -113,6 +113,7 @@ class NevisEnsembleNetwork(nengo.Network):
         # Deletes the current model configuration file
         if compile_design:
             ConfigTools.purge_model_config()
+        
         self.compile_design = compile_design
 
         if verbose:
