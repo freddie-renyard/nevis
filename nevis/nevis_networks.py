@@ -113,10 +113,6 @@ class NevisEnsembleNetwork(nengo.Network):
         # Add n_neurons, dimensions etc. to the model_config.json file. Compare these attributes on each
         # new object instantiation, and if any don't match, re-run the compilation process.
 
-        # Deletes the current model configuration file
-        if compile_design:
-            ConfigTools.purge_model_config()
-        
         self.compile_design = compile_design
 
         if verbose:
@@ -173,6 +169,9 @@ def compile_and_save_params(model, network):
     Again, implementation takes details from the existing backend.
     """
     if network.compile_design:
+
+        # Deletes current model config file
+        ConfigTools.purge_model_config()
         
         # Purge the compilation cache
         Filetools.purge_directory("nevis/file_cache")
