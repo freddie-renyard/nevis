@@ -12,6 +12,7 @@ from nevis.filetools import Filetools
 from nevis.memory_compiler import Compiler
 import os
 import sys
+from subprocess import check_call
 
 from nevis.serial_link import FPGAPort
 
@@ -274,9 +275,18 @@ def compile_and_save_params(model, network):
 
         Filetools.report_memory_usage(running_mem_total)
 
-        # Call the script which runs Vivado on the server.
-        full_call = 'bash nevis/File_transfer.sh /home/freddie/Desktop/'
-        os.system(full_call)
+        # Call the script that transfers the compiled files to 
+        # the Vivado server machine
+        cwd = os.getcwd()
+
+        server_config = ConfigTools.load_data("server_config.json")
+
+        server_path = server_config["project_dir"]
+        server_addr = server_config["ssh_addr"]
+        vivado_loc = server_config["vivado_loc"]
+        project_path = server_config["project_loc"]
+        script_path = cwd + "/nevis/File_transfer.sh %s %s %s %s"
+        check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)  
     
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
