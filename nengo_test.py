@@ -13,10 +13,15 @@ def run_simple_fpga_model():
 
         input_node = nengo.Node(input_func)
 
+        if input("Would you like to compile design? [y/n]") == "y":
+            compile_design = True
+        else:
+            compile_design = False
+
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
             dimensions=1,
-            compile_design=True
+            compile_design=compile_design
         )
         
         nengo.Connection(input_node, fpga_ens.input)
