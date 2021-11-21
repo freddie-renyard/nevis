@@ -93,7 +93,7 @@ class FPGAPort:
         hardware_val = 0
         if len(rx_data) == self.bytes_to_read:
             hardware_val = int.from_bytes(rx_data, byteorder="big", signed=True)
-            hardware_val = hardware_val / (2**22) # (2**self.output_scales[0])
+            hardware_val = hardware_val / (2**self.output_scales[0])
 
         if t == 0.0:
             return 0.5

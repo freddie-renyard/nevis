@@ -154,7 +154,7 @@ class NevisEnsembleNetwork(nengo.Network):
                 eval_points = eval_points,
                 label       = "Dummy Ensemble"
             )
-            nengo.Connection(self.input, self.ensemble, synapse=None)
+            nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
             
             self.connection = nengo.Connection(
                 self.ensemble, # Pre object
@@ -194,7 +194,6 @@ def compile_and_save_params(model, network):
         ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc
 
         ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
-        logger.info(dict(ens_args))
 
         # scaled_encoders = gain * encoders
         # TODO this is computationally wasteful, but the way that the Encoder 
@@ -212,7 +211,7 @@ def compile_and_save_params(model, network):
 
         conn_args = {}
         conn_args["weights"] = param_model.params[network.connection].weights
-        conn_args["t_pstc"] = (network.t_pstc / 16) / sim_args["dt"]
+        conn_args["t_pstc"] = network.connection.synapse.tau / sim_args["dt"]
 
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"]) # Timestep has been normalised to 1
 
