@@ -95,10 +95,7 @@ class FPGAPort:
             hardware_val = int.from_bytes(rx_data, byteorder="big", signed=True)
             hardware_val = hardware_val / (2**self.output_scales[0])
 
-        if t == 0.0:
-            return 0.5
-        else:
-            return hardware_val
+        return hardware_val
 
     def twos_complementer(self, value):
         # TODO Heavily optimise this.

@@ -148,7 +148,8 @@ class NevisEnsembleNetwork(nengo.Network):
                 dimensions  = self.input_dimensions,
                 neuron_type = self.neuron_type,
                 eval_points = eval_points,
-                label       = "Dummy Ensemble"
+                label       = "Dummy Ensemble",
+                seed        = self.seed
             )
             nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
             
