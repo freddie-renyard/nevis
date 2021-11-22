@@ -145,34 +145,16 @@ class Compiler:
 
         # Compute the exponent bit depth needed to store the parameters
         max_value = np.amax([abs(x) for x in target_list])
-        min_value = np.amin([abs(x) for x in target_list])
-
-        def calculate_binary_exp(value):
-
-            # Determine the binary exponent needed to store the value
-            # with a -1.0 to ~1.0 normalised mantissa
-            exponent = 0
-            if value > 1.0:
-                while value >= 1.0:
-                    value /= 2
-                    exponent += 1
-            else:
-                while value <= 1.0:
-                    value *= 2
-                    exponent += 1
-                value /= 2
-                exponent -= 1
-            
-            return exponent 
+        min_value = np.amin([abs(x) for x in target_list]) 
         
         # Calculate upper exponent - NB This method will hang if the largest value is 0.0...
-        upper_exponent = calculate_binary_exp(max_value)
+        upper_exponent = cls.calculate_binary_exp(max_value)
 
         # Check if the lowest value is a zero.
         if min_value < 1*2**-10:
             min_value = 1*2**-10
 
-        lower_exponent = calculate_binary_exp(min_value)
+        lower_exponent = cls.calculate_binary_exp(min_value)
 
         if upper_exponent > lower_exponent:
             largest_exp = upper_exponent
@@ -249,6 +231,25 @@ class Compiler:
                 
         return compiled_str, mantissa_depth, exp_depth
 
+    @staticmethod
+    def calculate_binary_exp(value):
+
+            # Determine the binary exponent needed to store the value
+            # with a -1.0 to ~1.0 normalised mantissa
+            exponent = 0
+            if value > 1.0:
+                while value >= 1.0:
+                    value /= 2
+                    exponent += 1
+            else:
+                while value <= 1.0:
+                    value *= 2
+                    exponent += 1
+                value /= 2
+                exponent -= 1
+            
+            return exponent
+    
     @classmethod
     def clip_value(cls, value, threshold):
         # A function which rounds the values based on the exp_limit argument
