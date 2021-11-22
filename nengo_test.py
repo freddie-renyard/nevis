@@ -20,7 +20,7 @@ def run_simple_fpga_model():
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
             dimensions=1,
-            compile_design=False,
+            compile_design=True,
             t_pstc=t_pstc,
             tau_rc=tau_rc
         )
@@ -32,7 +32,10 @@ def run_simple_fpga_model():
             dimensions=1, 
             neuron_type=nengo.neurons.LIF(tau_rc)
         )
-        nengo.Connection(input_node, a, synapse=t_pstc)
+
+        nengo.Connection(input_node, a)
+        output_node = nengo.Node(size_in=1)
+        nengo.Connection(a, output_node, synapse=t_pstc)
 
 # Define, build and run a default Nengo network
 def run_default_model():

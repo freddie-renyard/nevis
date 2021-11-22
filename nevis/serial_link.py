@@ -94,7 +94,7 @@ class FPGAPort:
         if len(rx_data) == self.bytes_to_read:
             hardware_val = int.from_bytes(rx_data, byteorder="big", signed=True)
             hardware_val = hardware_val / (2**self.output_scales[0])
-
+    
         return hardware_val
 
     def twos_complementer(self, value):

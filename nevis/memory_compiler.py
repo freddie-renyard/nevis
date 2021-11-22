@@ -151,8 +151,8 @@ class Compiler:
         upper_exponent = cls.calculate_binary_exp(max_value)
 
         # Check if the lowest value is a zero.
-        if min_value < 1*2**-10:
-            min_value = 1*2**-10
+        if min_value < 1*10**-50:
+            min_value = 1*10**-50
 
         lower_exponent = cls.calculate_binary_exp(min_value)
 
@@ -174,8 +174,8 @@ class Compiler:
             exponent_val = 0
 
             # Check if the value is zero.
-            if value < 1*2**-10:
-                value = 1*2**-10
+            if value < 1*10**-50:
+                value = 1*10**-50
 
             if value >= 1:
                 while value >= 1:

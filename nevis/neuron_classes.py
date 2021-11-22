@@ -201,14 +201,14 @@ class Synapses:
 
         # This value is usually compiled in the Verilog, but is needed to compile
         # the starting memory files.
-        self.n_activ = 1 + self.radix_w + self.scale_w
+        self.n_activ_extra = n_activ_extra
+        self.n_activ = 1 + self.radix_w + self.scale_w + n_activ_extra
         
         # Calculate the number of bits to shift by to implement the post_synaptic filter.
         n_value = 1 / pstc_scale
         self.pstc_shift = int(math.log2(n_value))
         
         self.n_neurons = n_neurons
-        self.n_activ_extra = n_activ_extra
 
         # Multiply weights by scale factor
         scale_factor_w = 2 ** self.scale_w
@@ -323,7 +323,6 @@ class Synapses_Floating(Synapses):
     
         # Scale the weights by the post-synaptic scaling constant.
         decoders_list = [x*pstc_scale for x in decoders_list]
-        print(decoders_list)
 
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
@@ -333,6 +332,6 @@ class Synapses_Floating(Synapses):
         super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 
         # Compile the weights.
-        exp_limit = 15
+        exp_limit = 1000
         self.comp_weights_list, self.n_w_man, self.n_w_exp = Compiler.compile_to_float(self.weights, self.radix_w, exp_limit, verbose=verbose)
         self.n_w = self.n_w_exp + self.n_w_man

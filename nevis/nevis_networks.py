@@ -211,9 +211,11 @@ def compile_and_save_params(model, network):
 
         conn_args = {}
         conn_args["weights"] = param_model.params[network.connection].weights
-        conn_args["t_pstc"] = network.connection.synapse.tau / sim_args["dt"]
-
-        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"]) # Timestep has been normalised to 1
+        conn_args["t_pstc"] = network.connections[0].synapse.tau
+        
+        conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
+        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
+        logger.info("PSTC Scale factor: %f", conn_args["pstc_scale"])
 
         # Define the compiler params. TODO write an optimiser function to
         # define these params automatically.
@@ -221,10 +223,10 @@ def compile_and_save_params(model, network):
         comp_args["radix_encoder"] = 8
         comp_args["bits_input"] = 8
         comp_args["radix_input"] = comp_args["bits_input"] - 1
-        comp_args["radix_weights"] = 6
+        comp_args["radix_weights"] = 4
         comp_args["n_dv_post"] = 10
-        comp_args["n_activ_extra"] = 6
-        comp_args["min_float_val"] = 1*2**-20
+        comp_args["n_activ_extra"] = 2
+        comp_args["min_float_val"] = 1*2**-50
 
         # Compile an ensemble (NeVIS - Encoder) TODO ensure that this distinction is correct
         input_hardware = neuron_classes.Encoder_Floating(
@@ -259,8 +261,8 @@ def compile_and_save_params(model, network):
         # Save the compiled models's parameters in a JSON file
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
-            out_node_depths= [output_hardware.n_w_man + output_hardware.scale_w + output_hardware.n_activ_extra + 1],
-            out_node_scales= [output_hardware.n_w_man - 1 + output_hardware.scale_w + output_hardware.n_activ_extra]
+            out_node_depths= [output_hardware.n_activ + 1],
+            out_node_scales= [output_hardware.n_activ - 11]
         )
 
         ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], 1)
@@ -318,7 +320,7 @@ def build_NevisEnsembleNetwork(model, network):
     model.add_op(Reset(input_sig))
 
     # Build the input signal into the model
-    input_sig = model.build(nengo.synapses.Lowpass(network.t_pstc), input_sig)
+    input_sig = model.build(nengo.synapses.Lowpass(0), input_sig)
 
     # Define the output signal
     output_sig = Signal(np.zeros(network.output_dimensions), name="output")
