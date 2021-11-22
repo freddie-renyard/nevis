@@ -162,7 +162,7 @@ class Compiler:
             largest_exp = lower_exponent
 
         # Add one for the sign
-        exp_depth = math.ceil(math.log2(largest_exp + 1)) + 1 #max_exponent + 1
+        exp_depth = math.ceil(math.log2(largest_exp + 1)) + 1
 
         # Iterate over every value
         i=0
@@ -191,6 +191,7 @@ class Compiler:
             # Convert the mantissa to its binary string representation
             mantissa_bin, _, overflow = cls.frac_to_truncated_bin(value, radix_mantissa, man_sign)
 
+            # Add a positive sign bit
             if not overflow:
                 mantissa_bin = "0" + mantissa_bin
 
@@ -207,13 +208,15 @@ class Compiler:
             exp_sign = (exponent_val < 0)
             exponent_bin = str(int("{0:032b}".format(abs(exponent_val))))
             
-            # TODO This should be put into a function.
+            # Zero pad the exponent out if the exponent is not the same length as the alloted memory entry.
             if len(str(exponent_bin)) != exp_depth:
                 exponent_bin = "0" * (exp_depth - len(exponent_bin)) + exponent_bin
             
+            # Convert the negative binary exponent to its signed representation.
             if exp_sign:
                 exponent_bin = cls.twos_complementer(exponent_bin, exp_depth)
 
+            # Log the values for debug
             if verbose:
                 if man_sign:
                     display_val = value*-1
@@ -223,37 +226,38 @@ class Compiler:
                 logger2.info("Compiled Mantissa: %s, Compiled Exponent: %s", mantissa_bin, exponent_bin)
                 i += 1
             
-            # Concatenate the two entries together
+            # Concatenate the two entries together and add to the list to compile to memory file.
             concat_result = mantissa_bin + exponent_bin
-
-            # Add to the list
             compiled_str.append(concat_result)
                 
         return compiled_str, mantissa_depth, exp_depth
 
     @staticmethod
     def calculate_binary_exp(value):
+        """Determine the binary exponent needed to store the value
+        with a -1.0 to ~1.0 normalised mantissa.
+        """
 
-            # Determine the binary exponent needed to store the value
-            # with a -1.0 to ~1.0 normalised mantissa
-            exponent = 0
-            if value > 1.0:
-                while value >= 1.0:
-                    value /= 2
-                    exponent += 1
-            else:
-                while value <= 1.0:
-                    value *= 2
-                    exponent += 1
+        exponent = 0
+        if value > 1.0:
+            while value >= 1.0:
                 value /= 2
-                exponent -= 1
-            
-            return exponent
+                exponent += 1
+        else:
+            while value <= 1.0:
+                value *= 2
+                exponent += 1
+            value /= 2
+            exponent -= 1
+        
+        return exponent
     
     @classmethod
     def clip_value(cls, value, threshold):
-        # A function which rounds the values based on the exp_limit argument
-        # Ensure input parameters are positive
+        """A method which rounds a value based on a threshold.
+        """
+
+        # Ensure the input parameters are positive
         value_sign = (value < 0.0)
         value_abs = abs(value)
         threshold = abs(threshold)
@@ -268,16 +272,21 @@ class Compiler:
 
     @staticmethod
     def frac_to_truncated_bin(fraction, bin_places, is_neg=False):
+        """Compute the rounded binary fraction that can be represented
+        in the given number of binary places. 
+        """
         
         bin_frac = 0
         overflow_flag = False
 
-        # This allows the compiler to exploit the extra value provided by negative two's complement 
+        # This allows the compiler to exploit the extra value provided by a
+        # negative two's complement representation.
         if is_neg:
             value_range = 2 ** bin_places
         else:
             value_range = 2 ** bin_places - 1
 
+        # Calculate the desired amount of fractional value precision.
         for value in range(value_range):
 
             if bin_places == 0:
@@ -296,7 +305,8 @@ class Compiler:
                     bin_frac = value
             elif fraction > upper_bound:
                 bin_frac = value +1
-                
+            
+        # Check overflow to ensure to catch potential positive number misrepresentation.
         step = 1.0 / (2 ** bin_places)
         if fraction > ((step)*((2 ** bin_places) - 1) + step/2.0):
             overflow_flag = True
@@ -349,6 +359,9 @@ class Compiler:
 
     @staticmethod
     def twos_complementer(bin_str, final_bit_depth):
+        """Converts a binary number, represented as a string, 
+        to its two's complement representation.
+        """
 
         flipped_number = ""
         for bit in bin_str:
@@ -367,8 +380,11 @@ class Compiler:
 
     @staticmethod
     def determine_middle_exp(target_list):
-
-        abs_list = [abs(x) for x in target_list]
+        """Determine the exponent needed to represent a given 
+        middle value of a list, which is defined as the mean
+        of the exponents needed to represent the largest and 
+        smallest values.
+        """
         max_val = abs(np.amax(target_list))
         min_val = abs(np.amin(target_list))
 
@@ -386,7 +402,6 @@ class Compiler:
 
     @staticmethod
     def calculate_refractory_params(refractory, timestep):
-
         """Calculates the appropriate hardware parameters for the refractory period specified.
 
         Parameters
@@ -459,6 +474,8 @@ class Compiler:
     
     @classmethod
     def test_float_compiler(cls):
+        """A method for evaluation of the floating point compiler.
+        """
 
         mantissa = 3
 
@@ -467,35 +484,19 @@ class Compiler:
         test_inputs = [x/resolution for x in range(-resolution, resolution+1)]
         test_inputs = [x*gain for x in test_inputs]
 
+        # Compile the parameters.
         concat_numbers, mantissa_depth, exp_depth = cls.compile_to_float(test_inputs, mantissa, exp_limit=0.0, verbose=True)
 
         # Deconcatenate the data
         exp_bins = [x[mantissa_depth:] for x in concat_numbers]
         mantissa_bins = [x[:mantissa_depth] for x in concat_numbers]
 
-        def abs_and_sign(binaries):
-            signs = []
-            abs_vals = []
-            depth = len(binaries[0])
-            for binary in binaries:
-                if binary[0] == "1":
-                    abs_val = cls.twos_complementer(binary, depth)
-                    abs_vals.append(abs_val)
-                    signs.append(-1)
-                else:
-                    abs_vals.append(binary)
-                    signs.append(1)
-
-            final_ints = [int(x, 2) * y for x, y in zip(abs_vals, signs)] 
-            
-            return final_ints
-
         # Convert mantissae to integers
-        man_ints = abs_and_sign(mantissa_bins)
+        man_ints = cls.abs_and_sign(mantissa_bins)
         man_ints = [x / (2**mantissa) for x in man_ints]
 
         # Convert exponents to integers
-        exp_ints = abs_and_sign(exp_bins)
+        exp_ints = cls.abs_and_sign(exp_bins)
 
         # Scale mantissae by exponents
         final_vals = [x*(2**y) for x,y in zip(man_ints, exp_ints)]
@@ -523,8 +524,27 @@ class Compiler:
         mplcursors.cursor(hover=True)
         plt.show()
 
-#com = Compiler()
-#com.test_float_compiler()
+    @classmethod
+    def abs_and_sign(cls, binaries):
+        """Convert list of binary values (represented as strings)
+        to their corresponding signed integer representation.
+        """
+        signs = []
+        abs_vals = []
+        depth = len(binaries[0])
+        for binary in binaries:
+            if binary[0] == "1":
+                abs_val = cls.twos_complementer(binary, depth)
+                abs_vals.append(abs_val)
+                signs.append(-1)
+            else:
+                abs_vals.append(binary)
+                signs.append(1)
+
+        final_ints = [int(x, 2) * y for x, y in zip(abs_vals, signs)] 
+        
+        return final_ints
+
 """
 NOTES
 
