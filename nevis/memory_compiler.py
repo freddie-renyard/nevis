@@ -77,8 +77,7 @@ class Compiler:
             
             int_part, fractional_part, sign = num_split(x)
    
-            bin_frac = cls.frac_to_truncated_bin(fractional_part, bin_places)
-            # print(fractional_part, "binary fractional part: ", bin_frac)        
+            bin_frac = cls.frac_to_truncated_bin(fractional_part, bin_places)     
             bin_int = int("{0:032b}".format(int_part))
         
             final_number = str(bin_int) + bin_frac
@@ -93,7 +92,6 @@ class Compiler:
                 is_negative_zero = False
 
             # Conversion to twos complement for the binary integers that require it
-            
             if sign & ~is_negative_zero:
                 
                 flipped_number = ""
@@ -109,7 +107,7 @@ class Compiler:
                 if len(flipped_number) != total_bit_depth:
                     flipped_number = flipped_number[0:total_bit_depth]
                 
-                final_number = flipped_number #self.twos_complementer(final_number, total_bit_depth)
+                final_number = flipped_number
 
             compiled_str.append(final_number)
 
@@ -227,9 +225,8 @@ class Compiler:
             exp_sign = (exponent_val < 0)
             exponent_bin = str(int("{0:032b}".format(abs(exponent_val))))
             
-            # This should be put into a function.
+            # TODO This should be put into a function.
             if len(str(exponent_bin)) != exp_depth:
-                # print("Length of exp_Detph", exp_depth, "Length of exponent_bin:", len(exponent_bin))
                 exponent_bin = "0" * (exp_depth - len(exponent_bin)) + exponent_bin
             
             if exp_sign:
@@ -242,16 +239,14 @@ class Compiler:
                     display_val = value
                 logger2.info("Index: %i, Value: %.5f, Mantissa: %.5f, Exponent: %.5f", i, x, display_val, exponent_val)
                 logger2.info("Compiled Mantissa: %s, Compiled Exponent: %s", mantissa_bin, exponent_bin)
+                i += 1
             
             # Concatenate the two entries together
             concat_result = mantissa_bin + exponent_bin
 
             # Add to the list
             compiled_str.append(concat_result)
-
-            if verbose:
-                i += 1
-
+                
         return compiled_str, mantissa_depth, exp_depth
 
     @classmethod
@@ -380,13 +375,11 @@ class Compiler:
         while max_val <= 1:
             max_val *= 2
             max_exponent += 1
-            print(max_val)
 
         min_exponent = 0
         while min_val <= 1:
             min_val *= 2
             min_exponent += 1
-            print(min_val)
 
         return int((max_exponent + min_exponent)/2)
 
