@@ -184,7 +184,7 @@ class Encoder:
         verilog_header.write(('REF_VALUE_' + index + ' = ' + str(self.ref_value)  + ',' + '\n'))
         verilog_header.write(('T_RC_SHIFT_' + index + ' = ' + str(self.t_rc_shift)  + ',' + '\n'))
         # Output value to NAU param
-        verilog_header.write(('N_DV_POST_' + index + ' = ' + str(self.n_dv_post) + ';' + '\n'))
+        verilog_header.write(('N_DV_POST_' + index + ' = ' + str(self.n_dv_post) + ',' + '\n'))
 
         if floating:
              # Gain Params
@@ -192,14 +192,14 @@ class Encoder:
             verilog_header.write(('N_G_EXP_' + index + ' = ' + str(self.n_g_exponent) + ',' + '\n'))
             # Bias Params
             verilog_header.write(('N_B_MAN_' + index + ' = ' + str(self.n_b_mantissa) + ',' + '\n'))
-            verilog_header.write(('N_B_EXP_' + index + ' = ' + str(self.n_b_exponent) + ',' + '\n'))
+            verilog_header.write(('N_B_EXP_' + index + ' = ' + str(self.n_b_exponent) + ';' + '\n'))
         else:
             # Gain Params
             verilog_header.write(('N_G_' + index + ' = ' + str(self.n_g) + ',' + '\n'))
             verilog_header.write(('RADIX_G_' + index + ' = ' + str(self.radix_g) + ',' + '\n'))
             # Bias Params
             verilog_header.write(('N_B_' + index + ' = ' + str(self.n_b) + ',' + '\n'))
-            verilog_header.write(('RADIX_B_' + index + ' = ' + str(self.radix_b) + ',' + '\n'))
+            verilog_header.write(('RADIX_B_' + index + ' = ' + str(self.radix_b) + ';' + '\n'))
 
         verilog_header.write('\n')
         verilog_header.close()
@@ -371,12 +371,12 @@ class Synapses:
         verilog_header.write(('parameter ' + 'N_WEIGHT_' + index + ' = ' + str(self.n_w) + ',' + '\n'))
         verilog_header.write(('SCALE_W_' + index + ' = ' + str(self.scale_w) + ',' + '\n'))
         verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
-        verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ';' + '\n'))
+        verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ',' + '\n'))
 
         if floating:
-            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(self.n_w_exp) + ',' + '\n'))
+            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(self.n_w_exp) + ';' + '\n'))
         else:
-            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(0) + ',' + '\n'))
+            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(0) + ';' + '\n'))
 
         verilog_header.write('\n')
         verilog_header.close()

@@ -6,7 +6,7 @@ import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return np.sin(t *0.5* 2*np.pi), np.sin(t *0.5* 2*np.pi)
+    return np.sin(t *0.5* 2*np.pi)
 
 # Define, build and run a simple NeVIS model
 def run_simple_fpga_model():
