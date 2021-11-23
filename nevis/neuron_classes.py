@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class Encoder:
     
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, n_dv_post):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post):
         """ Creates the appropriate parameters needed for the encoder module in hardware. On initialisation, the 
         class runs the compilation of all the relevant model parameters and stores them
         as attributes of the instance of the class.
@@ -50,6 +50,8 @@ class Encoder:
             usually occuring after gain and bias mulitplication, the gains and 
             biases are divided before compilation to prevent the need for 
             division operations in hardware.
+        ref_period : float or int
+            The refractory period, normalised by the timestep.
         n_x: int
             The bit depth of the encoder's input value.
         radix_x: int
@@ -80,6 +82,12 @@ class Encoder:
         self.radix_x = radix_x
 
         self.n_neurons = n_neurons
+
+        # Compute params needed to represent the refractory period.
+        self.ref_value, self.n_r = self.calculate_refractory_params(ref_period)
+
+        # Compute the left shift needed to represent the neuronal RC constant.
+        self.t_rc_shift = int(math.log2(t_rc))
 
         # Declaring class attributes to compile
         self.n_dv_post = n_dv_post
@@ -115,6 +123,28 @@ class Encoder:
             target_list[i] = target_list[i] + (n_ref * "1")
 
         return target_list
+    
+    def calculate_refractory_params(refractory):
+        """Calculates the appropriate hardware parameters for the refractory period specified.
+
+        Parameters
+        ----------
+        refractory : float
+            The refractory period, normalised by the model's timestep.
+
+        Returns
+        -------
+        period: int
+            The new refractory period in context of the hardware implementation of the LIF spiking behaviour.
+        bit_width: int
+            The hardware bitwidth needed to store the value and produce the appropriate overflow
+            for hardware refractory period behaviour.
+        """
+        
+        bit_width = math.ceil(math.log2(refractory+1))
+        refractory = 2 ** bit_width - refractory - 1
+
+        return int(refractory), int(bit_width)
 
     def save_params(self, index, n_r, running_mem_total=0):
 
@@ -137,6 +167,7 @@ class Encoder:
         )
 
         return running_mem_total
+
 
 class Encoder_Fixed(Encoder):
     def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):

@@ -400,40 +400,6 @@ class Compiler:
 
         return int((max_exponent + min_exponent)/2)
 
-    @staticmethod
-    def calculate_refractory_params(refractory, timestep):
-        """Calculates the appropriate hardware parameters for the refractory period specified.
-
-        Parameters
-        ----------
-        refractory : float
-            The refractory period in the context of the original model's timestep.
-        timestep : float
-            The timestep of the original model.
-
-        Returns
-        -------
-        period: int
-            The new refractory period in context of the hardware implementation of the LIF spiking behaviour.
-        bit_width: int
-            The hardware bitwidth needed to store the value and produce the appropriate overflow
-            for hardware refractory period behaviour.
-        """
-        
-        period = refractory / timestep
-        bit_width = math.ceil(math.log2(period+1))
-        period = 2 ** bit_width - period - 1
-
-        return int(period), int(bit_width)
-
-    @staticmethod
-    def calculate_t_rc_shift(scaled_trc):
-        """ This method takes the scaled T_RC value (t_rc / dt) from the Nengo model,
-        and returns the number of bits that will need to be shifted to realise the division
-        in hardware.
-        """
-        return int(math.log2(scaled_trc))
-
     @classmethod
     def test_int_bin_conversion(cls):
         """ A method for testing the integer conversion function in the compiler.

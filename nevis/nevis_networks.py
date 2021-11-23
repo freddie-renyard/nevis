@@ -232,6 +232,7 @@ def compile_and_save_params(model, network):
             encoder_list=ens_args["encoders"],
             bias_list=ens_args["bias"],
             t_rc=ens_args["t_rc"],
+            ref_period=ens_args["ref_period"]
             n_x=comp_args["bits_input"],
             radix_x=comp_args["radix_input"],
             radix_g=comp_args["radix_encoder"],
