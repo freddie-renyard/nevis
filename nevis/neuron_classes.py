@@ -124,7 +124,7 @@ class Encoder:
 
         return target_list
     
-    def calculate_refractory_params(refractory):
+    def calculate_refractory_params(self, refractory):
         """Calculates the appropriate hardware parameters for the refractory period specified.
 
         Parameters
@@ -170,22 +170,22 @@ class Encoder:
 
 
 class Encoder_Fixed(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
         self.radix_g = radix_g
         self.radix_b = radix_b
-        super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, n_dv_post)
+        super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         self.comp_gain_list, self.n_g = Compiler.compile_floats(self.eg_trc_list, self.radix_g, verbose=verbose)
         self.comp_bias_list, self.n_b = Compiler.compile_floats(self.b_trc_list, self.radix_b, verbose=verbose)
 
 class Encoder_Floating(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
 
         self.radix_g_mantissa = radix_g
         self.radix_b_mantissa = radix_b
 
-        super().__init__(n_neurons, gain_list, encoder_list, bias_list, t_rc, n_x, radix_x, n_dv_post)
+        super().__init__(n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         exp_limit = 15

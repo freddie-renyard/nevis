@@ -232,7 +232,7 @@ def compile_and_save_params(model, network):
             encoder_list=ens_args["encoders"],
             bias_list=ens_args["bias"],
             t_rc=ens_args["t_rc"],
-            ref_period=ens_args["ref_period"]
+            ref_period=ens_args["ref_period"],
             n_x=comp_args["bits_input"],
             radix_x=comp_args["radix_input"],
             radix_g=comp_args["radix_encoder"],
@@ -263,14 +263,11 @@ def compile_and_save_params(model, network):
             out_node_scales= [output_hardware.n_activ - 11]
         )
 
-        ref_period, n_r = Compiler.calculate_refractory_params(ens_args["ref_period"], 1)
-        t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
-
         compiled_model = [input_hardware, output_hardware]
         ens_nau_params = {}
-        ens_nau_params["n_r"] = n_r
-        ens_nau_params["ref_period"] = ref_period
-        ens_nau_params["tau_rc_shift"] = t_rc_hardware
+        ens_nau_params["n_r"] = input_hardware.n_r
+        ens_nau_params["ref_period"] = input_hardware.ref_value
+        ens_nau_params["tau_rc_shift"] = input_hardware.t_rc_shift
 
         # Save the parameters as a Verilog header file.
         Filetools.compile_and_save_header(
@@ -280,7 +277,7 @@ def compile_and_save_params(model, network):
         )
 
         # Save the compiled parameters in the appropriate files
-        running_mem_total = input_hardware.save_params(0, n_r=n_r)
+        running_mem_total = input_hardware.save_params(0, n_r=input_hardware.n_r)
         running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
 
         Filetools.report_memory_usage(running_mem_total)
