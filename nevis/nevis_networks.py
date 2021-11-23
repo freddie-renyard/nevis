@@ -148,7 +148,7 @@ class NevisEnsembleNetwork(nengo.Network):
                 dimensions  = self.input_dimensions,
                 neuron_type = self.neuron_type,
                 eval_points = eval_points,
-                label       = "Dummy Ensemble",
+                label       = " ",
                 seed        = self.seed
             )
             nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
@@ -192,7 +192,6 @@ def compile_and_save_params(model, network):
         ens_args["output_dimensions"] = network.output_dimensions
         ens_args["bias"] = param_model.params[network.ensemble].bias
         ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc
-
         ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
 
         # scaled_encoders = gain * encoders
@@ -207,12 +206,10 @@ def compile_and_save_params(model, network):
 
         # Tool for painlessly investigating the parameters of Nengo objects
         #l = dir(param_model.params[network.connection])
-        #print(l)
 
         conn_args = {}
         conn_args["weights"] = param_model.params[network.connection].weights
         conn_args["t_pstc"] = network.connections[0].synapse.tau
-        
         conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
         logger.info("PSTC Scale factor: %f", conn_args["pstc_scale"])
@@ -220,7 +217,7 @@ def compile_and_save_params(model, network):
         # Define the compiler params. TODO write an optimiser function to
         # define these params automatically.
         comp_args = {}
-        comp_args["radix_encoder"] = 8
+        comp_args["radix_encoder"] = 4
         comp_args["bits_input"] = 8
         comp_args["radix_input"] = comp_args["bits_input"] - 1
         comp_args["radix_weights"] = 4
@@ -269,13 +266,16 @@ def compile_and_save_params(model, network):
         t_rc_hardware = Compiler.calculate_t_rc_shift(ens_args["t_rc"])
 
         compiled_model = [input_hardware, output_hardware]
-        refractory_params = [n_r, ref_period, t_rc_hardware]
+        ens_nau_params = {}
+        ens_nau_params["n_r"] = n_r
+        ens_nau_params["ref_period"] = ref_period
+        ens_nau_params["tau_rc_shift"] = t_rc_hardware
 
         # Save the parameters as a Verilog header file.
         Filetools.compile_and_save_header(
             filename = 'model_params.vh', 
             full_model = compiled_model, 
-            global_params = refractory_params
+            global_params = ens_nau_params
         )
 
         # Save the compiled parameters in the appropriate files

@@ -50,6 +50,7 @@ class FPGAPort:
     def begin_serial(self, timeout):
 
         logger.info("INFO: Attempting to open serial port...")
+        print("[NeVIS]: Attempting to open serial port...")
         
         attempts = 0
 
@@ -61,6 +62,7 @@ class FPGAPort:
             try:
                 self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005)
                 logger.info(('INFO: Opened serial port to device at' + self.link_addr.name))
+                print('[NeVIS]: Opened serial port to device at', self.link_addr.name)
             except:
                 if max_attempts != 0:
                     logger.info(('INFO: Connection failed. Re-attempting...attempts: '+ str(attempts)))

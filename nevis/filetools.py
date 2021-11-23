@@ -141,6 +141,10 @@ class Filetools:
                 # Bias Params
                 file.write(('N_B_' + index + ' = ' + str(sec.n_b) + ',' + '\n'))
                 file.write(('RADIX_B_' + index + ' = ' + str(sec.radix_b) + ',' + '\n'))
+                # NAU Params
+                file.write(('N_R_' + index + ' = ' + str(global_params["n_r"])  + ',' + '\n'))
+                file.write(('REF_VALUE_' + index + ' = ' + str(global_params["ref_period"])  + ',' + '\n'))
+                file.write(('T_RC_SHIFT_' + index + ' = ' + str(global_params["tau_rc_shift"])  + ',' + '\n'))
                 # Output value to NAU param
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
                 file.write('\n') 
@@ -188,12 +192,12 @@ class Filetools:
                 # Bias Params
                 file.write(('N_B_MAN_' + index + ' = ' + str(sec.n_b_mantissa) + ',' + '\n'))
                 file.write(('N_B_EXP_' + index + ' = ' + str(sec.n_b_exponent) + ',' + '\n'))
+                # NAU Params
+                file.write(('N_R_' + index + ' = ' + str(global_params["n_r"])  + ',' + '\n'))
+                file.write(('REF_VALUE_' + index + ' = ' + str(global_params["ref_period"])  + ',' + '\n'))
+                file.write(('T_RC_SHIFT_' + index + ' = ' + str(global_params["tau_rc_shift"])  + ',' + '\n'))
                 # Output value to NAU param
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
                 file.write('\n')
-
-        file.write(("// Global Synaptic Params" + '\n'))
-        file.write(('parameter N_R = ' + str(global_params[0])  + ',' + '\n'))
-        file.write(('REF_VALUE = ' + str(global_params[1])  + ',' + '\n'))
-        file.write(('T_RC_SHIFT = ' + str(global_params[2])  + ';' + '\n'))
+        
         logger.info("INFO: Writing the Verilog header file...")
