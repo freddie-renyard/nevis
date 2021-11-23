@@ -127,7 +127,7 @@ class NevisEnsembleNetwork(nengo.Network):
             print("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
 
         # Set the output dimensions - currently only 1D is supported.
-        self.output_dimensions = 1
+        self.output_dimensions = self.input_dimensions
         
         self.t_pstc = t_pstc
         self.tau_rc = tau_rc
@@ -162,6 +162,21 @@ class NevisEnsembleNetwork(nengo.Network):
                 transform   = transform,
                 eval_points  = eval_points
             )
+
+def call_synthesis_server():
+    """Call the script that transfers the compiled files to
+    the Vivado server machine.
+    """
+    cwd = os.getcwd()
+
+    server_config = ConfigTools.load_data("server_config.json")
+
+    server_path = server_config["project_dir"]
+    server_addr = server_config["ssh_addr"]
+    vivado_loc = server_config["vivado_loc"]
+    project_path = server_config["project_loc"]
+    script_path = cwd + "/nevis/File_transfer.sh %s %s %s %s"
+    check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)
 
 def compile_and_save_params(model, network):
     """ Extracts the parameters from the network, compiles them into
@@ -265,18 +280,7 @@ def compile_and_save_params(model, network):
             out_node_scales= [output_hardware.n_activ - 11]
         )
 
-        # Call the script that transfers the compiled files to 
-        # the Vivado server machine
-        cwd = os.getcwd()
-
-        server_config = ConfigTools.load_data("server_config.json")
-
-        server_path = server_config["project_dir"]
-        server_addr = server_config["ssh_addr"]
-        vivado_loc = server_config["vivado_loc"]
-        project_path = server_config["project_loc"]
-        script_path = cwd + "/nevis/File_transfer.sh %s %s %s %s"
-        check_call(script_path % (server_path, server_addr, vivado_loc, project_path), shell=True)
+        call_synthesis_server()
 
 @nengo.builder.Builder.register(NevisEnsembleNetwork)
 def build_NevisEnsembleNetwork(model, network):
