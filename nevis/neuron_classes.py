@@ -280,7 +280,7 @@ class Synapses:
         n_value = 1 / pstc_scale
         self.pstc_shift = int(math.log2(n_value))
         
-        self.n_neurons = n_neurons
+        self.n_neurons_pre = n_neurons
 
         # Multiply weights by scale factor
         scale_factor_w = 2 ** self.scale_w
@@ -370,6 +370,7 @@ class Synapses:
         verilog_header.write(("// Decoder " + index + ' Params' + '\n'))
         verilog_header.write(('parameter ' + 'N_WEIGHT_' + index + ' = ' + str(self.n_w) + ',' + '\n'))
         verilog_header.write(('SCALE_W_' + index + ' = ' + str(self.scale_w) + ',' + '\n'))
+        verilog_header.write(('N_NEURON_PRE_' + index + ' = ' + str(self.n_neurons_pre) + ',' + '\n'))
         verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
         verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ',' + '\n'))
 
