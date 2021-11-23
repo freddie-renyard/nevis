@@ -200,4 +200,5 @@ class Filetools:
                 file.write(('N_DV_POST_' + index + ' = ' + str(sec.n_dv_post) + ';' + '\n'))
                 file.write('\n')
         
+        file.close()
         logger.info("INFO: Writing the Verilog header file...")

@@ -146,8 +146,9 @@ class Encoder:
 
         return int(refractory), int(bit_width)
 
-    def save_params(self, index, n_r, running_mem_total=0):
+    def save_params(self, index, running_mem_total=0):
 
+        # Save the encoder params
         filename = "encoder_compiled" + str(index) + ".mem"
         logger.info("INFO: Saving gain and bias to binary .mem file as %s", filename)
         combined = Filetools.combine_binary_params(self.comp_gain_list, self.comp_bias_list)
@@ -157,14 +158,19 @@ class Encoder:
             running_mem_total
         )
 
+        # Save the NAU start params
         filename = "nau_compiled" + str(index) + ".mem"
         logger.info("INFO: Saving NAU start parameters to binary .mem file as %s", filename)
-        combined = self.compile_nau_start_params(n_activ=self.n_dv_post, n_ref=n_r, n_neuron=self.n_neurons)
+        combined = self.compile_nau_start_params(n_activ=self.n_dv_post, n_ref=self.n_r, n_neuron=self.n_neurons)
         running_mem_total = Filetools.save_to_file(
             filename, 
             combined,
             running_mem_total
         )
+
+        verilog_header = open("nevis/file_cache/model_params.vh", "a")
+        verilog_header.write("")
+        verilog_header.close()
 
         return running_mem_total
 

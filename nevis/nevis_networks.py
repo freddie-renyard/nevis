@@ -171,10 +171,8 @@ def compile_and_save_params(model, network):
     """
     if network.compile_design:
 
-        # Deletes current model config file
+        # Purge previous build caches 
         ConfigTools.purge_model_config()
-        
-        # Purge the compilation cache
         Filetools.purge_directory("nevis/file_cache")
 
         # Generate the model which the parameters will be taken from
@@ -277,7 +275,7 @@ def compile_and_save_params(model, network):
         )
 
         # Save the compiled parameters in the appropriate files
-        running_mem_total = input_hardware.save_params(0, n_r=input_hardware.n_r)
+        running_mem_total = input_hardware.save_params(index=0)
         running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
 
         Filetools.report_memory_usage(running_mem_total)
