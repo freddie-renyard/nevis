@@ -5,6 +5,8 @@ from nengo.builder.operator import Copy, Reset, SimPyFunc
 import numpy as np
 import math
 import logging
+
+from numpy.lib import index_tricks
 from nevis import neuron_classes
 from nevis import serial_link
 from nevis.config_tools import ConfigTools
@@ -236,6 +238,7 @@ def compile_and_save_params(model, network):
             radix_g=comp_args["radix_encoder"],
             radix_b=comp_args["radix_encoder"],
             n_dv_post=comp_args["n_dv_post"],
+            index=0,
             verbose=True
         )
 
@@ -251,6 +254,7 @@ def compile_and_save_params(model, network):
             n_activ_extra=comp_args["n_activ_extra"],
             radix_w=comp_args["radix_weights"],
             minimum_val=comp_args["min_float_val"],
+            index=1,
             verbose=True
         )
 
@@ -260,25 +264,6 @@ def compile_and_save_params(model, network):
             out_node_depths= [output_hardware.n_activ + 1],
             out_node_scales= [output_hardware.n_activ - 11]
         )
-
-        compiled_model = [input_hardware, output_hardware]
-        ens_nau_params = {}
-        ens_nau_params["n_r"] = input_hardware.n_r
-        ens_nau_params["ref_period"] = input_hardware.ref_value
-        ens_nau_params["tau_rc_shift"] = input_hardware.t_rc_shift
-
-        # Save the parameters as a Verilog header file.
-        Filetools.compile_and_save_header(
-            filename = 'model_params.vh', 
-            full_model = compiled_model, 
-            global_params = ens_nau_params
-        )
-
-        # Save the compiled parameters in the appropriate files
-        running_mem_total = input_hardware.save_params(index=0)
-        running_mem_total = output_hardware.save_params(index=1, running_mem_total=running_mem_total)
-
-        Filetools.report_memory_usage(running_mem_total)
 
         # Call the script that transfers the compiled files to 
         # the Vivado server machine

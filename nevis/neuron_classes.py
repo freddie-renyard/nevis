@@ -146,10 +146,12 @@ class Encoder:
 
         return int(refractory), int(bit_width)
 
-    def save_params(self, index, running_mem_total=0):
+    def save_params(self, index, floating=True, running_mem_total=0):
+
+        index = str(index)
 
         # Save the encoder params
-        filename = "encoder_compiled" + str(index) + ".mem"
+        filename = "encoder_compiled" + index + ".mem"
         logger.info("INFO: Saving gain and bias to binary .mem file as %s", filename)
         combined = Filetools.combine_binary_params(self.comp_gain_list, self.comp_bias_list)
         running_mem_total = Filetools.save_to_file(
@@ -159,7 +161,7 @@ class Encoder:
         )
 
         # Save the NAU start params
-        filename = "nau_compiled" + str(index) + ".mem"
+        filename = "nau_compiled" + index + ".mem"
         logger.info("INFO: Saving NAU start parameters to binary .mem file as %s", filename)
         combined = self.compile_nau_start_params(n_activ=self.n_dv_post, n_ref=self.n_r, n_neuron=self.n_neurons)
         running_mem_total = Filetools.save_to_file(
@@ -168,15 +170,44 @@ class Encoder:
             running_mem_total
         )
 
+        # Write all relevant params for this portion of the network to the Verilog header file.
         verilog_header = open("nevis/file_cache/model_params.vh", "a")
-        verilog_header.write("")
+
+        verilog_header.write(("// Population " + index + ' Params' + '\n'))
+        verilog_header.write(('parameter ' + 'N_NEURON_' + index + ' = ' + str(self.n_neurons) + ',' + '\n'))
+        # X/Incoming activation Params
+        verilog_header.write(('N_X_' + index + ' = ' + str(self.n_x) + ',' + '\n'))
+        verilog_header.write(('RADIX_X_' + index + ' = ' + str(self.radix_x) + ',' + '\n'))
+
+        # NAU Params
+        verilog_header.write(('N_R_' + index + ' = ' + str(self.n_r)  + ',' + '\n'))
+        verilog_header.write(('REF_VALUE_' + index + ' = ' + str(self.ref_value)  + ',' + '\n'))
+        verilog_header.write(('T_RC_SHIFT_' + index + ' = ' + str(self.t_rc_shift)  + ',' + '\n'))
+        # Output value to NAU param
+        verilog_header.write(('N_DV_POST_' + index + ' = ' + str(self.n_dv_post) + ';' + '\n'))
+
+        if floating:
+             # Gain Params
+            verilog_header.write(('N_G_MAN_' + index + ' = ' + str(self.n_g_mantissa) + ',' + '\n'))
+            verilog_header.write(('N_G_EXP_' + index + ' = ' + str(self.n_g_exponent) + ',' + '\n'))
+            # Bias Params
+            verilog_header.write(('N_B_MAN_' + index + ' = ' + str(self.n_b_mantissa) + ',' + '\n'))
+            verilog_header.write(('N_B_EXP_' + index + ' = ' + str(self.n_b_exponent) + ',' + '\n'))
+        else:
+            # Gain Params
+            verilog_header.write(('N_G_' + index + ' = ' + str(self.n_g) + ',' + '\n'))
+            verilog_header.write(('RADIX_G_' + index + ' = ' + str(self.radix_g) + ',' + '\n'))
+            # Bias Params
+            verilog_header.write(('N_B_' + index + ' = ' + str(self.n_b) + ',' + '\n'))
+            verilog_header.write(('RADIX_B_' + index + ' = ' + str(self.radix_b) + ',' + '\n'))
+
+        verilog_header.write('\n')
         verilog_header.close()
 
         return running_mem_total
 
-
 class Encoder_Fixed(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, index, verbose=False):
         self.radix_g = radix_g
         self.radix_b = radix_b
         super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post)
@@ -185,8 +216,10 @@ class Encoder_Fixed(Encoder):
         self.comp_gain_list, self.n_g = Compiler.compile_floats(self.eg_trc_list, self.radix_g, verbose=verbose)
         self.comp_bias_list, self.n_b = Compiler.compile_floats(self.b_trc_list, self.radix_b, verbose=verbose)
 
+        self.save_params(index, floating=False)
+
 class Encoder_Floating(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, index, verbose=False):
 
         self.radix_g_mantissa = radix_g
         self.radix_b_mantissa = radix_b
@@ -197,6 +230,8 @@ class Encoder_Floating(Encoder):
         exp_limit = 15
         self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
         self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
+
+        self.save_params(index, floating=True)
 
 class Synapses:
 
@@ -306,7 +341,9 @@ class Synapses:
 
         return target_list
 
-    def save_params(self, index, running_mem_total=0):
+    def save_params(self, index, floating=True, running_mem_total=0):
+        
+        index = str(index)
 
         params_to_save = [
             self.comp_weights_list,
@@ -322,10 +359,27 @@ class Synapses:
 
         for param_pair in zip(params_to_save, names):
             running_mem_total = Filetools.save_to_file(
-            param_pair[1] + str(index) + ".mem", 
+            param_pair[1] + index + ".mem", 
             param_pair[0],
             running_mem_total
-            )
+        )
+
+        # Write all relevant params for this portion of the network to the Verilog header file.
+        verilog_header = open("nevis/file_cache/model_params.vh", "a")
+
+        verilog_header.write(("// Decoder " + index + ' Params' + '\n'))
+        verilog_header.write(('parameter ' + 'N_WEIGHT_' + index + ' = ' + str(self.n_w) + ',' + '\n'))
+        verilog_header.write(('SCALE_W_' + index + ' = ' + str(self.scale_w) + ',' + '\n'))
+        verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
+        verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ';' + '\n'))
+
+        if floating:
+            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(self.n_w_exp) + ',' + '\n'))
+        else:
+            verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(0) + ',' + '\n'))
+
+        verilog_header.write('\n')
+        verilog_header.close()
 
         return running_mem_total
 
@@ -343,7 +397,7 @@ class Synapses:
 
 class Synapses_Fixed(Synapses):
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, index, verbose=False):
        
         scale_w = 5
         # Scale the weights by the post-synaptic scaling constant.
@@ -354,9 +408,11 @@ class Synapses_Fixed(Synapses):
         # Compile the weights
         self.comp_weights_list, self.n_w = Compiler.compile_floats(self.weights, radix_w, verbose=verbose)
 
+        self.save_params(index, floating=False)
+
 class Synapses_Floating(Synapses):
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, index, verbose=False):
     
         # Scale the weights by the post-synaptic scaling constant.
         decoders_list = [x*pstc_scale for x in decoders_list]
@@ -372,3 +428,5 @@ class Synapses_Floating(Synapses):
         exp_limit = 1000
         self.comp_weights_list, self.n_w_man, self.n_w_exp = Compiler.compile_to_float(self.weights, self.radix_w, exp_limit, verbose=verbose)
         self.n_w = self.n_w_exp + self.n_w_man
+
+        self.save_params(index, floating=True)
