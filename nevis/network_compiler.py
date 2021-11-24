@@ -3,6 +3,7 @@ import math
 import logging
 from nevis.neuron_classes import Synapses_Floating, Encoder_Floating
 from nevis.config_tools import ConfigTools
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -19,35 +20,6 @@ class NetworkCompiler:
         sim_args = {}
         sim_args["dt"] = model.dt
 
-        # Gather ensemble parameters - vary between ensembles
-        ens_args = {}
-        ens_args["n_neurons"] = network.ensemble.n_neurons
-        ens_args["input_dimensions"] = network.input_dimensions
-        ens_args["output_dimensions"] = network.output_dimensions
-        ens_args["bias"] = model.params[network.ensemble].bias
-        ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc
-        ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
-
-        # scaled_encoders = gain * encoders
-        # TODO this is computationally wasteful, but the way that the Encoder 
-        # object is designed at present makes the code below the most readable 
-        # solution. Change the Encoder so that this is not the case.
-        ens_args["encoders"] = model.params[network.ensemble].encoders
-        ens_args["gain"] = model.params[network.ensemble].gain
-
-        # Gather refractory period
-        ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
-
-        # Tool for painlessly investigating the parameters of Nengo objects
-        #l = dir(param_model.params[network.connection])
-
-        conn_args = {}
-        conn_args["weights"] = model.params[network.connection].weights
-        conn_args["t_pstc"] = network.connections[0].synapse.tau
-        conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
-        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
-        logger.info("PSTC Scale factor: %f", conn_args["pstc_scale"])
-
         # Define the compiler params. TODO write an optimiser function to
         # define these params automatically.
         comp_args = {}
@@ -58,6 +30,27 @@ class NetworkCompiler:
         comp_args["n_dv_post"] = 10
         comp_args["n_activ_extra"] = 2
         comp_args["min_float_val"] = 1*2**-50
+
+        # Gather ensemble parameters - vary between ensembles
+        ens_args = {}
+        ens_args["n_neurons"] = network.ensemble.n_neurons
+        ens_args["input_dimensions"] = network.input_dimensions
+        ens_args["output_dimensions"] = network.output_dimensions
+        ens_args["bias"] = model.params[network.ensemble].bias
+        ens_args["t_rc"] = network.ensemble.neuron_type.tau_rc
+        ens_args["t_rc"] = ens_args["t_rc"] / sim_args["dt"]
+        # scaled_encoders = gain * encoders
+        # TODO this is computationally wasteful, but the way that the Encoder 
+        # object is designed at present makes the code below the most readable 
+        # solution. Change the Encoder so that this is not the case.
+        ens_args["encoders"] = model.params[network.ensemble].encoders
+        ens_args["gain"] = model.params[network.ensemble].gain
+        # Gather refractory period
+        ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
+
+        print(model.params[network.ensemble].gain)
+        print(model.params[network.ensemble].encoders)
+        print(model.params[network.ensemble].scaled_encoders)
 
         # Compile an ensemble (NeVIS - Encoder)
         input_hardware = Encoder_Floating(
@@ -76,22 +69,37 @@ class NetworkCompiler:
             verbose=True
         )
 
-        # Compile an output node (Nevis - Synapses)
-        output_hardware = Synapses_Floating(
-            n_neurons=ens_args["n_neurons"],
-            pstc_scale=conn_args["pstc_scale"],
-            decoders_list=conn_args["weights"][0], # Take the zeroeth dimension of this array as it is
-            # a dot product of the decoders and the encoders of the next section (as this dot product
-            # is used for hardware memory optimisation)
-            encoders_list=[1], # Indicates a positive weight addition
-            n_activ_extra=comp_args["n_activ_extra"],
-            radix_w=comp_args["radix_weights"],
-            minimum_val=comp_args["min_float_val"],
-            index=1,
-            verbose=True
-        )
+        # Tool for painlessly investigating the parameters of Nengo objects
+        #l = dir(network.connections[1])
+
+        # Compile the decoder for each dimension.
+        i = 1
+        for weight_list in model.params[network.connection].weights:
+
+            conn_args = {}
+            conn_args["weights"] = model.params[network.connection].weights
+            conn_args["t_pstc"] = network.connections[1].synapse.tau
+            conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
+            conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
+            conn_args["output_dims"] = network.connections[1].size_out
+
+            # Compile an output node (Nevis - Synapses)
+            output_hardware = Synapses_Floating(
+                n_neurons=ens_args["n_neurons"],
+                output_dims=conn_args["output_dims"],
+                pstc_scale=conn_args["pstc_scale"],
+                decoders_list=weight_list, 
+                encoders_list=[1], # Indicates a positive weight addition
+                n_activ_extra=comp_args["n_activ_extra"],
+                radix_w=comp_args["radix_weights"],
+                minimum_val=comp_args["min_float_val"],
+                index=("0C"+str(i)),
+                verbose=True
+            )
+            i += 1
 
         # Save the compiled models's parameters in a JSON file
+        # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
             out_node_depths= [output_hardware.n_activ + 1],

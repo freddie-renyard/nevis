@@ -235,7 +235,7 @@ class Encoder_Floating(Encoder):
 
 class Synapses:
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False):
+    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
@@ -244,6 +244,8 @@ class Synapses:
         ----------
         n_neurons: int
             The number of neurons in the module.
+        output_dims : int
+            The number of dimensions to decode.
         pstc_scale: float
             The model's scaling factor for the post-synaptic filter. For optimal 
             results, the reciprocal of this value must be a power of two as the hardware
@@ -281,7 +283,7 @@ class Synapses:
         self.pstc_shift = int(math.log2(n_value))
         
         self.n_neurons_pre = n_neurons
-
+        self.output_dims = output_dims
         # Multiply weights by scale factor
         scale_factor_w = 2 ** self.scale_w
         self.weights = [x*scale_factor_w for x in decoders_list]
@@ -373,6 +375,7 @@ class Synapses:
         verilog_header.write(('N_NEURON_PRE_' + index + ' = ' + str(self.n_neurons_pre) + ',' + '\n'))
         verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
         verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ',' + '\n'))
+        verilog_header.write(('OUTPUT_DIMS_' + index + ' = ' + str(self.output_dims) + ',' + '\n'))
 
         if floating:
             verilog_header.write(('N_WEIGHT_EXP_' + index + ' = ' + str(self.n_w_exp) + ';' + '\n'))
@@ -398,13 +401,13 @@ class Synapses:
 
 class Synapses_Fixed(Synapses):
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, index, verbose=False):
+    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, index, verbose=False):
        
         scale_w = 5
         # Scale the weights by the post-synaptic scaling constant.
         decoders_list = [x*pstc_scale for x in list(decoders_list)]
 
-        super().__init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
+        super().__init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 
         # Compile the weights
         self.comp_weights_list, self.n_w = Compiler.compile_floats(self.weights, radix_w, verbose=verbose)
@@ -413,7 +416,7 @@ class Synapses_Fixed(Synapses):
 
 class Synapses_Floating(Synapses):
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, index, verbose=False):
+    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, index, verbose=False):
     
         # Scale the weights by the post-synaptic scaling constant.
         decoders_list = [x*pstc_scale for x in decoders_list]
@@ -423,7 +426,7 @@ class Synapses_Floating(Synapses):
             decoders_list = [Compiler.clip_value(x, minimum_val) for x in list(decoders_list)]
 
         scale_w = Compiler.determine_middle_exp(decoders_list)
-        super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
+        super().__init__(n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 
         # Compile the weights.
         exp_limit = 1000

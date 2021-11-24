@@ -8,6 +8,9 @@ import numpy as np
 def input_func(t):
     return np.sin(t *0.5* 2*np.pi)
 
+def target_function(x):
+    return x**2, x**3
+
 # Define, build and run a simple NeVIS model
 def run_simple_fpga_model():
     with model:
@@ -22,7 +25,8 @@ def run_simple_fpga_model():
             dimensions=1,
             compile_design=True,
             t_pstc=t_pstc,
-            tau_rc=tau_rc
+            tau_rc=tau_rc,
+            function=target_function
         )
         
         nengo.Connection(input_node, fpga_ens.input)
@@ -40,11 +44,15 @@ def run_simple_fpga_model():
 # Define, build and run a default Nengo network
 def run_default_model():
     with model:
+
         stim = nengo.Node([0])
         a = nengo.Ensemble(n_neurons=50, 
             dimensions=1
         )
+
         nengo.Connection(stim, a)
+        out = nengo.Node(size_in=2)
+        nengo.Connection(a, out, function=target_function)
 
 model = nengo.Network()
 

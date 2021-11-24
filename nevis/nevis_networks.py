@@ -16,7 +16,7 @@ import os
 import sys
 from subprocess import check_call
 from nevis.global_tools import Global_Tools
-from nevis.nevis.network_compiler import NetworkCompiler
+from nevis.network_compiler import NetworkCompiler
 
 from nevis.serial_link import FPGAPort
 
@@ -38,8 +38,7 @@ class NevisEnsembleNetwork(nengo.Network):
     n_neurons : int
         The number of neurons.
     dimensions : int
-        The number of representational dimensions. Under current
-        implementation, 1 is the only valid input.
+        The number of representational dimensions.
     tau_rc : float
         The time constant of the LIF membrane.
     function : callable or 
@@ -120,15 +119,11 @@ class NevisEnsembleNetwork(nengo.Network):
 
         if verbose:
             logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
+
         ConfigTools.run_fpga_config_wizard()
 
         self.input_dimensions = dimensions
-        if dimensions != 1:
-            logger.error("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
-            print("ERROR: Current implementation of NeVIS does not support dimensions higher than 1.")
-
-        # Set the output dimensions - currently only 1D is supported.
-        self.output_dimensions = self.input_dimensions
+        self.output_dimensions = self.get_output_dims(dimensions, function)
         
         self.t_pstc = t_pstc
         self.tau_rc = tau_rc
@@ -163,6 +158,18 @@ class NevisEnsembleNetwork(nengo.Network):
                 transform   = transform,
                 eval_points  = eval_points
             )
+
+    def get_output_dims(self, dimensions, function):
+        """ Check if your current architecture supports
+        array-like inputs for functions.
+        """
+        if callable(function):
+            return len(function(np.zeros(dimensions)))
+        elif function is nengo.Default:
+            return dimensions
+        else:
+            logger.error("Only callable functions are currently supported.")
+            raise nengo.exceptions.ValidationError("Only callable functions are currently supported.", "function", self)
 
 def call_synthesis_server():
     """Call the script that transfers the compiled files to
