@@ -71,32 +71,26 @@ class NetworkCompiler:
 
         # Tool for painlessly investigating the parameters of Nengo objects
         #l = dir(network.connections[1])
+        
+        conn_args = {}
+        conn_args["weights"] = model.params[network.connection].weights
+        conn_args["t_pstc"] = network.connections[1].synapse.tau
+        conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
+        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
 
-        # Compile the decoder for each dimension.
-        i = 1
-        for weight_list in model.params[network.connection].weights:
-
-            conn_args = {}
-            conn_args["weights"] = model.params[network.connection].weights
-            conn_args["t_pstc"] = network.connections[1].synapse.tau
-            conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
-            conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
-            conn_args["output_dims"] = network.connections[1].size_out
-
-            # Compile an output node (Nevis - Synapses)
-            output_hardware = Synapses_Floating(
-                n_neurons=ens_args["n_neurons"],
-                output_dims=conn_args["output_dims"],
-                pstc_scale=conn_args["pstc_scale"],
-                decoders_list=weight_list, 
-                encoders_list=[1], # Indicates a positive weight addition
-                n_activ_extra=comp_args["n_activ_extra"],
-                radix_w=comp_args["radix_weights"],
-                minimum_val=comp_args["min_float_val"],
-                index=("0C"+str(i)),
-                verbose=True
-            )
-            i += 1
+        # Compile an output node (Nevis - Synapses)
+        output_hardware = Synapses_Floating(
+            n_neurons=ens_args["n_neurons"],
+            pstc_scale=conn_args["pstc_scale"],
+            decoders_list=conn_args["weights"], 
+            encoders_list=[1], # Indicates a positive weight addition
+            n_activ_extra=comp_args["n_activ_extra"],
+            radix_w=comp_args["radix_weights"],
+            minimum_val=comp_args["min_float_val"],
+            pre_index=0,
+            post_start_index=1,
+            verbose=True
+        )
 
         # Save the compiled models's parameters in a JSON file
         # TODO adapt this for higher dimensional representation.

@@ -121,7 +121,7 @@ class Compiler:
         return compiled_str, total_bit_depth
 
     @classmethod
-    def compile_to_float(cls, target_list, radix_mantissa, exp_limit, verbose=False):
+    def compile_to_float(cls, target_list, radix_mantissa, exp_limit, force_exp_depth=None, verbose=False):
         """ This method compiles parameters to the proprietary floating point architecture
         specified in the encoder.
 
@@ -131,6 +131,8 @@ class Compiler:
             The list to compile.
         radix_mantissa: int
             The desired radix of the mantissa.
+        force_exp_depth : 
+            The desired depth of the exponent, for compiling multidimensional decoders.
         exp_limit
             The maximum magnitude of the exponent. Used to prevent the compiler from compiling
             extremely low values e.g. 1.0x2^-53. Default = 0 (no limit)
@@ -143,27 +145,11 @@ class Compiler:
         # Normalised mantissa - add the sign bit to the total mantissa bit depth.
         mantissa_depth = radix_mantissa + 1
 
-        # Compute the exponent bit depth needed to store the parameters
-        max_value = np.amax([abs(x) for x in target_list])
-        min_value = np.amin([abs(x) for x in target_list]) 
-        
-        # Calculate upper exponent - NB This method will hang if the largest value is 0.0...
-        upper_exponent = cls.calculate_binary_exp(max_value)
-
-        # Check if the lowest value is a zero.
-        if min_value < 1*10**-50:
-            min_value = 1*10**-50
-
-        lower_exponent = cls.calculate_binary_exp(min_value)
-
-        if upper_exponent > lower_exponent:
-            largest_exp = upper_exponent
+        if force_exp_depth is None:
+            exp_depth = cls.calculate_exponent_depth(target_list)
         else:
-            largest_exp = lower_exponent
-
-        # Add one for the sign
-        exp_depth = math.ceil(math.log2(largest_exp + 1)) + 1
-
+            exp_depth = force_exp_depth
+        
         # Iterate over every value
         i=0
         for x in target_list:
@@ -231,6 +217,30 @@ class Compiler:
             compiled_str.append(concat_result)
                 
         return compiled_str, mantissa_depth, exp_depth
+
+    @classmethod 
+    def calculate_exponent_depth(cls, target_list):
+
+        # Compute the exponent bit depth needed to store the parameters
+        max_value = np.amax([abs(x) for x in target_list])
+        min_value = np.amin([abs(x) for x in target_list]) 
+        
+        # Calculate upper exponent - NB This method will hang if the largest value is 0.0...
+        upper_exponent = cls.calculate_binary_exp(max_value)
+
+        # Check if the lowest value is a zero.
+        if min_value < 1*10**-50:
+            min_value = 1*10**-50
+
+        lower_exponent = cls.calculate_binary_exp(min_value)
+
+        if upper_exponent > lower_exponent:
+            largest_exp = upper_exponent
+        else:
+            largest_exp = lower_exponent
+        
+        # Add one for the sign
+        return math.ceil(math.log2(largest_exp + 1)) + 1
 
     @staticmethod
     def calculate_binary_exp(value):
