@@ -461,7 +461,7 @@ class Compiler:
         test_inputs = [x*gain for x in test_inputs]
 
         # Compile the parameters.
-        concat_numbers, mantissa_depth, exp_depth = cls.compile_to_float(test_inputs, mantissa, exp_limit=0.0, verbose=True)
+        concat_numbers, mantissa_depth, exp_depth = cls.compile_to_float(test_inputs, mantissa, exp_limit=0.0, force_exp_depth=8, verbose=True)
 
         # Deconcatenate the data
         exp_bins = [x[mantissa_depth:] for x in concat_numbers]
@@ -521,6 +521,7 @@ class Compiler:
         
         return final_ints
 
+#Compiler.test_float_compiler()
 """
 NOTES
 

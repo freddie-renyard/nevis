@@ -432,6 +432,7 @@ class Synapses_Floating(Synapses):
                 decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
 
         scale_w = Compiler.determine_middle_exp(decoders_list[0])
+        logger.info("Scale_w for %i: %i", post_start_index, scale_w)
         super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 
         # Compile the weights.

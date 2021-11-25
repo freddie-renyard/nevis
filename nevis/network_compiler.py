@@ -74,9 +74,10 @@ class NetworkCompiler:
         
         conn_args = {}
         conn_args["weights"] = model.params[network.connection].weights
-        conn_args["t_pstc"] = network.connections[1].synapse.tau
+        conn_args["t_pstc"] = network.connections[0].synapse.tau
         conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
+        logger.info("t_pstc: %f", conn_args["t_pstc"])
 
         # Compile an output node (Nevis - Synapses)
         output_hardware = Synapses_Floating(
