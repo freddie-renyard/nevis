@@ -5,6 +5,7 @@ import time
 from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
 import math
+import bitstring
 
 logger = logging.getLogger("logs/nevis.log")
 
@@ -37,10 +38,11 @@ class FPGAPort:
 
         model_dict = ConfigTools.load_data("model_config.json")
         self.input_depths = model_dict["in_node_depths"]
-        self.output_depths = model_dict["out_node_depths"]
-        self.output_scales = model_dict["out_node_scales"]
+        self.output_depths = int(model_dict["out_node_depths"][0])
+        self.output_scales = model_dict["out_node_scales"][0]
+        self.n_values = model_dict["n_values"]
 
-        self.bytes_to_read = math.ceil(self.output_depths[0] / 8.0)
+        self.bytes_to_read = math.ceil((self.output_depths*self.n_values) / 8.0)
         
         # Define an empty link address
         self.link_addr = 0
@@ -60,7 +62,7 @@ class FPGAPort:
         
         while type(self.link_addr) == int: 
             try:
-                self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005)
+                self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005) # , timeout=0.0005
                 logger.info(('INFO: Opened serial port to device at' + self.link_addr.name))
                 print('[NeVIS]: Opened serial port to device at', self.link_addr.name)
             except:
@@ -92,12 +94,15 @@ class FPGAPort:
         rx_data = self.link_addr.read(size=self.bytes_to_read)
         
         #ser.flush()
-        hardware_val = 0
-        if len(rx_data) == self.bytes_to_read:
-            hardware_val = int.from_bytes(rx_data, byteorder="big", signed=True)
-            hardware_val = hardware_val / (2**self.output_scales[0])
-    
-        return hardware_val
+        hardware_vals = [0 for _ in range(self.n_values)]
+        
+        #if len(rx_data) == self.bytes_to_read:
+        data = bitstring.BitArray(rx_data).bin
+        for i in range(self.n_values):
+            bytes_obj = bitstring.Bits(bin=data[self.output_depths*i:self.output_depths*(i+1)]).tobytes()
+            hardware_vals[i] = int.from_bytes(bytes_obj, byteorder="big", signed=True) / (2 ** self.output_scales * 2**4)
+            
+        return hardware_vals
 
     def twos_complementer(self, value):
         # TODO Heavily optimise this.

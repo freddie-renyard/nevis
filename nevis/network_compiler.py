@@ -98,6 +98,7 @@ class NetworkCompiler:
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
             out_node_depths= [output_hardware.n_activ + 1],
-            out_node_scales= [output_hardware.n_activ - 11]
+            out_node_scales= [output_hardware.n_activ - 11],
+            n_values=np.shape(conn_args["weights"])[0]
         )
 
