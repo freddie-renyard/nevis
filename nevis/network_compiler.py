@@ -28,7 +28,7 @@ class NetworkCompiler:
         comp_args["radix_input"] = comp_args["bits_input"] - 1
         comp_args["radix_weights"] = 4
         comp_args["n_dv_post"] = 10
-        comp_args["n_activ_extra"] = 2
+        comp_args["n_activ_extra"] = 3
         comp_args["min_float_val"] = 1*2**-50
 
         # Gather ensemble parameters - vary between ensembles
@@ -97,7 +97,7 @@ class NetworkCompiler:
         # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
-            out_node_depths= [output_hardware.n_activ + 1],
+            out_node_depths= [output_hardware.n_activ],
             out_node_scales= [output_hardware.n_activ - 11],
             n_values=np.shape(conn_args["weights"])[0]
         )

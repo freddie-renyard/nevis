@@ -422,7 +422,7 @@ class Synapses_Floating(Synapses):
     def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         
         # Scale the weights by the post-synaptic scaling constant.
-        decoders_list = decoders_list*pstc_scale
+        decoders_list = decoders_list * pstc_scale
         self.output_dims = np.shape(decoders_list)[0]
         print(self.output_dims)
         
