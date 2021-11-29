@@ -421,17 +421,15 @@ class Synapses_Floating(Synapses):
 
     def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         
-        # Scale the weights by the post-synaptic scaling constant.
-        decoders_list = decoders_list * pstc_scale
+        decoders_list = decoders_list * 1
         self.output_dims = np.shape(decoders_list)[0]
-        print(self.output_dims)
         
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
             for i, weight_list in enumerate(decoders_list):
                 decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
 
-        scale_w = Compiler.determine_middle_exp(decoders_list[0])
+        scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
         logger.info("Scale_w for %i: %i", post_start_index, scale_w)
         super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
 

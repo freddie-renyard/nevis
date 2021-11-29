@@ -395,20 +395,13 @@ class Compiler:
         of the exponents needed to represent the largest and 
         smallest values.
         """
-        max_val = abs(np.amax(target_list))
-        min_val = abs(np.amin(target_list))
+        max_val = np.amax(np.abs(target_list))
+        min_val = np.amin(np.abs(target_list))
 
-        max_exponent = 0
-        while max_val <= 1:
-            max_val *= 2
-            max_exponent += 1
-
-        min_exponent = 0
-        while min_val <= 1:
-            min_val *= 2
-            min_exponent += 1
-
-        return int((max_exponent + min_exponent)/2)
+        max_exponent = math.ceil(math.log2(max_val))
+        min_exponent = math.ceil(math.log2(min_val))
+        
+        return abs(int((max_exponent + min_exponent)/2))
 
     @classmethod
     def test_int_bin_conversion(cls):
@@ -521,7 +514,6 @@ class Compiler:
         
         return final_ints
 
-#Compiler.test_float_compiler()
 """
 NOTES
 
