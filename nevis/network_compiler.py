@@ -99,8 +99,8 @@ class NetworkCompiler:
         # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
-            out_node_depths= [output_hardware.n_activ],
-            out_node_scales= [output_hardware.n_activ-4],
+            out_node_depths= [output_hardware.n_output],
+            out_node_scales= [output_hardware.n_output-4],
             n_values=np.shape(conn_args["weights"])[0]
         )
 
