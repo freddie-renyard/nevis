@@ -163,12 +163,12 @@ class Compiler:
             if value < 1*10**-50:
                 value = 1*10**-50
 
-            if value >= 1:
-                while value >= 1:
+            if value >= 1.0:
+                while value >= 1.0:
                     value /= 2
                     exponent_val += 1
             else:
-                while value < 1:
+                while value < 1.0:
                     value *= 2
                     exponent_val -= 1
                 value /= 2
@@ -183,6 +183,8 @@ class Compiler:
 
             if overflow and not man_sign:
                 # Increase exponent, rounding the value up if the value is being rounded
+                # TODO Add a catch case here for the situation where depth of the overflowed exponent
+                # is greater than allocated bit depth.
                 exponent_val += 1
                 mantissa_bin = "0" + "1" + "0"*(radix_mantissa-1)
 
@@ -400,7 +402,7 @@ class Compiler:
 
         max_exponent = math.ceil(math.log2(max_val))
         min_exponent = math.ceil(math.log2(min_val))
-        
+
         return abs(int((max_exponent + min_exponent)/2))
 
     @classmethod
