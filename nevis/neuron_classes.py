@@ -235,7 +235,7 @@ class Encoder_Floating(Encoder):
 
 class Synapses:
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, scale_w, verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
@@ -269,7 +269,8 @@ class Synapses:
         """
         
         self.radix_w = radix_w
-        self.scale_w = scale_w 
+        self.scale_w = scale_w
+        self.n_output = n_output
 
         # This value is usually compiled in the Verilog, but is needed to compile
         # the starting memory files.
@@ -375,6 +376,7 @@ class Synapses:
         verilog_header.write(('SCALE_W_' + index + ' = ' + str(self.scale_w) + ',' + '\n'))
         verilog_header.write(('N_NEURON_PRE_' + index + ' = ' + str(self.n_neurons_pre) + ',' + '\n'))
         verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
+        verilog_header.write(('N_OUTPUT_' + index + ' = ' + str(self.n_output) + ',' + '\n'))
         verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ',' + '\n'))
         verilog_header.write(('OUTPUT_DIMS_' + index + ' = ' + str(self.output_dims) + ',' + '\n'))
 
@@ -402,7 +404,7 @@ class Synapses:
 
 class Synapses_Fixed(Synapses):
 
-    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, index, verbose=False):
+    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, index, verbose=False):
        
         # TODO add support for multidimensional decoders here.
 
@@ -419,7 +421,7 @@ class Synapses_Fixed(Synapses):
 
 class Synapses_Floating(Synapses):
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         
         decoders_list = decoders_list * 1
         self.output_dims = np.shape(decoders_list)[0]
@@ -431,10 +433,9 @@ class Synapses_Floating(Synapses):
 
         scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
         logger.info("Scale_w for %i: %i", post_start_index, scale_w)
-        super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
+        super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, scale_w, verbose=False)
 
-        # Compile the weights.
-
+        # Compile the weights
         highest_exp = 0
 
         # Calculate the largest exponent needed for each weight list, to ensure the same bit depths across weights.

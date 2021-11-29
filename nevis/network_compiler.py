@@ -26,9 +26,9 @@ class NetworkCompiler:
         comp_args["radix_encoder"] = 4
         comp_args["bits_input"] = 8
         comp_args["radix_input"] = comp_args["bits_input"] - 1
-        comp_args["radix_weights"] = 4
+        comp_args["radix_weights"] = 7
         comp_args["n_dv_post"] = 10
-        comp_args["n_activ_extra"] = 9
+        comp_args["n_activ_extra"] = 6
         comp_args["min_float_val"] = 1*2**-50
 
         # Gather ensemble parameters - vary between ensembles
@@ -77,6 +77,7 @@ class NetworkCompiler:
         conn_args["t_pstc"] = network.connections[0].synapse.tau
         conn_args["t_pstc"] = conn_args["t_pstc"] / sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
+        conn_args["n_output"] = 10
         logger.info("t_pstc: %f", conn_args["t_pstc"])
 
         # Compile an output node (Nevis - Synapses)
@@ -86,6 +87,7 @@ class NetworkCompiler:
             decoders_list=conn_args["weights"], 
             encoders_list=[1], # Indicates a positive weight addition
             n_activ_extra=comp_args["n_activ_extra"],
+            n_output=conn_args["n_output"],
             radix_w=comp_args["radix_weights"],
             minimum_val=comp_args["min_float_val"],
             pre_index=0,
@@ -98,7 +100,7 @@ class NetworkCompiler:
         ConfigTools.create_model_config_file(
             in_node_depths= [input_hardware.n_x],
             out_node_depths= [output_hardware.n_activ],
-            out_node_scales= [output_hardware.n_activ-2],
+            out_node_scales= [output_hardware.n_activ-4],
             n_values=np.shape(conn_args["weights"])[0]
         )
 
