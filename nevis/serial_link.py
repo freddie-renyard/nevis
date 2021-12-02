@@ -37,11 +37,14 @@ class FPGAPort:
         self.baud_rate = serial_dict["baud_rate"]
 
         model_dict = ConfigTools.load_data("model_config.json")
-        self.input_depths = model_dict["in_node_depths"]
-        self.output_depths = int(model_dict["out_node_depths"][0])
-        self.output_scales = model_dict["out_node_scales"][0]
-        self.n_values = model_dict["n_values"]
 
+        self.input_depth = model_dict["in_node_depth"]
+        self.n_input_values = model_dict["n_input_values"]
+        self.bytes_to_send = math.ceil((self.input_depth * self.n_input_values) / 8.0)
+
+        self.output_depths = int(model_dict["out_node_depth"])
+        self.output_scales = model_dict["out_node_scale"]
+        self.n_values = model_dict["n_output_values"]
         self.bytes_to_read = math.ceil((self.output_depths*self.n_values) / 8.0)
         self.rx_bits = self.n_values * (self.output_depths)
         self.bit_excess = self.bytes_to_read * 8 - self.rx_bits
@@ -84,12 +87,13 @@ class FPGAPort:
         """
         
         # Scale the input value up
-        in_scale = 2 ** (self.input_depths[0] - 1)
+        in_scale = 2 ** (self.input_depth - 1)
         output_num = int(d[0] * in_scale)
-        in_x = self.twos_complementer(output_num)
+        in_total = bitstring.Bits(int=output_num, length=self.bytes_to_send*8)
+        print(in_total.bin, len(in_total.bytes))
         
         try:
-            self.link_addr.write(in_x)
+            self.link_addr.write(in_total.bytes)
         except:
             pass
 

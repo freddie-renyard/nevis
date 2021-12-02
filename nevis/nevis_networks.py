@@ -120,7 +120,7 @@ class NevisEnsembleNetwork(nengo.Network):
         if verbose:
             logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
-        ConfigTools.run_fpga_config_wizard()
+        #ConfigTools.run_fpga_config_wizard()
 
         self.input_dimensions = dimensions
         self.output_dimensions = self.get_output_dims(dimensions, function)

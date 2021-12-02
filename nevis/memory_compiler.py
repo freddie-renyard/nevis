@@ -187,6 +187,7 @@ class Compiler:
                 # is greater than allocated bit depth.
                 exponent_val += 1
                 mantissa_bin = "0" + "1" + "0"*(radix_mantissa-1)
+                logger2.warning("An overflow has occured. This can lead to unexpected float compiler behaviour.")
 
             # Convert the mantissa 2's complement if required.
             if man_sign and not overflow:

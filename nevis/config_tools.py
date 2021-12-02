@@ -50,7 +50,7 @@ class ConfigTools:
             pass
             
     @classmethod
-    def create_model_config_file(cls, in_node_depths, out_node_depths, out_node_scales, n_values):
+    def create_model_config_file(cls, in_node_depth, out_node_depth, out_node_scale, n_input_values, n_output_values):
         """ Saves compiled model's interfacing parameters into a JSON config file.
         Parameters
         ----------
@@ -66,10 +66,11 @@ class ConfigTools:
         """
         
         model_dict = {}
-        model_dict["in_node_depths"] = in_node_depths
-        model_dict["out_node_depths"] = out_node_depths
-        model_dict["out_node_scales"] = out_node_scales
-        model_dict["n_values"] = n_values
+        model_dict["in_node_depth"] = in_node_depth
+        model_dict["out_node_depth"] = out_node_depth
+        model_dict["out_node_scale"] = out_node_scale
+        model_dict["n_input_values"] = n_input_values
+        model_dict["n_output_values"] = n_output_values
 
         with open("nevis/config/model_config.json", "w") as json_file:
             json.dump(model_dict, fp=json_file, indent=4)

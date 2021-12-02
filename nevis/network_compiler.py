@@ -98,9 +98,10 @@ class NetworkCompiler:
         # Save the compiled models's parameters in a JSON file
         # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
-            in_node_depths= [input_hardware.n_x],
-            out_node_depths= [output_hardware.n_output],
-            out_node_scales= [output_hardware.n_output-4],
-            n_values=np.shape(conn_args["weights"])[0]
+            in_node_depth= input_hardware.n_x,
+            out_node_depth= output_hardware.n_output,
+            out_node_scale= output_hardware.n_output-4,
+            n_input_values = 1,
+            n_output_values=np.shape(conn_args["weights"])[0]
         )
 
