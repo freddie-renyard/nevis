@@ -73,8 +73,19 @@ class Encoder:
         -------
         None.
         """
-        # Multiply the gains by their respective encoder values and divide by RC constant.
-        self.eg_trc_list = [(x * y) / t_rc for x, y in zip(gain_list, encoder_list)]
+
+        self.input_dims = np.shape(encoder_list)[-1]
+        print(self.input_dims)
+
+        if self.input_dims == 1:
+            # Multiply the gains by their respective encoder values and divide by RC constant.
+            self.eg_trc_list = [(x * y) / t_rc for x, y in zip(gain_list, encoder_list)]
+        else:
+            # Omit the encoders from the multiplication, as the dimensionality is higher than 1.
+            self.eg_trc_list = [x / t_rc for x in gain_list]
+            # Transpose the encoders to make looping over them easier later in compilation.
+            self.encoders = np.transpose(encoder_list)
+
         self.b_trc_list = [x / t_rc for x in bias_list]
 
         # Range of x is confined to 0.99... to -1 (Q0.x)
@@ -91,6 +102,7 @@ class Encoder:
 
         # Declaring class attributes to compile
         self.n_dv_post = n_dv_post
+
 
     def compile_nau_start_params(self, n_activ, n_neuron, n_ref): 
         """ Compiles the start file for the NAU.
@@ -145,6 +157,18 @@ class Encoder:
         refractory = 2 ** bit_width - refractory - 1
 
         return int(refractory), int(bit_width)
+    
+    def compile_and_save_encoders(self, radix_phi):
+        """This method will determine if the encoder dimensionality is more
+        than 1, and whether an encoder list will need to be compiled and saved.
+        """
+        self.comp_encoder_concat = [""] * self.n_neurons
+        if self.input_dims != 1:
+            for enc_dim in self.encoders:
+                print(enc_dim)
+                comp_enc_list, self.n_phi = Compiler.compile_floats(enc_dim, radix_phi, verbose=True)
+                for i, comp_str in enumerate(comp_enc_list):
+                    self.comp_encoder_concat[i] = self.comp_encoder_concat[i] + comp_str
 
     def save_params(self, index, floating=True, running_mem_total=0):
 
@@ -170,6 +194,15 @@ class Encoder:
             running_mem_total
         )
 
+        if self.input_dims != 1:
+            filename = "phis_compiled" + index + ".mem"
+            logger.info("INFO: Saving encoder phi vectors to binary .mem file as %s", filename)
+            running_mem_total = Filetools.save_to_file(
+                filename=filename,
+                target_list=self.comp_encoder_concat,
+                running_mem_total=running_mem_total
+            )
+
         # Write all relevant params for this portion of the network to the Verilog header file.
         verilog_header = open("nevis/file_cache/model_params.vh", "a")
 
@@ -178,6 +211,10 @@ class Encoder:
         # X/Incoming activation Params
         verilog_header.write(('N_X_' + index + ' = ' + str(self.n_x) + ',' + '\n'))
         verilog_header.write(('RADIX_X_' + index + ' = ' + str(self.radix_x) + ',' + '\n'))
+
+        # Dot product params
+        verilog_header.write(('N_PHI_' + index + ' = ' + str(self.n_phi) + ',' + '\n'))
+        verilog_header.write(('INPUT_DIMS_' + index + ' = ' + str(self.input_dims) + ',' + '\n'))
 
         # NAU Params
         verilog_header.write(('N_R_' + index + ' = ' + str(self.n_r)  + ',' + '\n'))
@@ -219,7 +256,7 @@ class Encoder_Fixed(Encoder):
         self.save_params(index, floating=False)
 
 class Encoder_Floating(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, index, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
 
         self.radix_g_mantissa = radix_g
         self.radix_b_mantissa = radix_b
@@ -231,6 +268,7 @@ class Encoder_Floating(Encoder):
         self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
         self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
 
+        self.compile_and_save_encoders(radix_phi=radix_phi)
         self.save_params(index, floating=True)
 
 class Synapses:

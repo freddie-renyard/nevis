@@ -6,7 +6,7 @@ import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return np.sin(t *0.5* 2*np.pi)
+    return np.sin(t *0.5* 2*np.pi) , np.cos(t *0.5* 2*np.pi)
 
 def target_function(x):
     """
@@ -15,7 +15,7 @@ def target_function(x):
         return_vals.append(x**i)
     return return_vals
     """
-    return x*2, x**3
+    return x**2
 
 # Define, build and run a simple NeVIS model
 def run_simple_fpga_model():
@@ -28,8 +28,8 @@ def run_simple_fpga_model():
 
         fpga_ens = NevisEnsembleNetwork(
             n_neurons=50,
-            dimensions=1,
-            compile_design=False,
+            dimensions=2,
+            compile_design=True,
             t_pstc=t_pstc,
             tau_rc=tau_rc,
             function=target_function
@@ -38,7 +38,7 @@ def run_simple_fpga_model():
         #nengo.Connection(fpga_ens.output, fpga_ens.input)
         
         a = nengo.Ensemble(n_neurons=50, 
-            dimensions=1, 
+            dimensions=2, 
             neuron_type=nengo.neurons.LIF(tau_rc)
         )
         

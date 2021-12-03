@@ -23,9 +23,10 @@ class NetworkCompiler:
         # Define the compiler params. TODO write an optimiser function to
         # define these params automatically.
         comp_args = {}
-        comp_args["radix_encoder"] = 4
+        comp_args["radix_encoder"] = 10
         comp_args["bits_input"] = 8
         comp_args["radix_input"] = comp_args["bits_input"] - 1
+        comp_args["radix_phi"] = 5
         comp_args["radix_weights"] = 7
         comp_args["n_dv_post"] = 10
         comp_args["n_activ_extra"] = 6
@@ -48,10 +49,6 @@ class NetworkCompiler:
         # Gather refractory period
         ens_args["ref_period"] = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
 
-        print(model.params[network.ensemble].gain)
-        print(model.params[network.ensemble].encoders)
-        print(model.params[network.ensemble].scaled_encoders)
-
         # Compile an ensemble (NeVIS - Encoder)
         input_hardware = Encoder_Floating(
             n_neurons=ens_args["n_neurons"],
@@ -64,6 +61,7 @@ class NetworkCompiler:
             radix_x=comp_args["radix_input"],
             radix_g=comp_args["radix_encoder"],
             radix_b=comp_args["radix_encoder"],
+            radix_phi = comp_args["radix_phi"],
             n_dv_post=comp_args["n_dv_post"],
             index=0,
             verbose=False

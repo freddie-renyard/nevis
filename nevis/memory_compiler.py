@@ -77,7 +77,7 @@ class Compiler:
             
             int_part, fractional_part, sign = num_split(x)
    
-            bin_frac = cls.frac_to_truncated_bin(fractional_part, bin_places)     
+            bin_frac, _ , _ = cls.frac_to_truncated_bin(fractional_part, bin_places)     
             bin_int = int("{0:032b}".format(int_part))
         
             final_number = str(bin_int) + bin_frac
