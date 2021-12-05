@@ -29,7 +29,7 @@ class NetworkCompiler:
         comp_args["radix_phi"]      = 5
         comp_args["radix_weights"]  = 7
         comp_args["n_dv_post"]      = 10
-        comp_args["n_activ_extra"]  = 6
+        comp_args["n_activ_extra"]  = 3
         comp_args["min_float_val"]  = 1*2**-50
 
         # Gather ensemble parameters - vary between ensembles

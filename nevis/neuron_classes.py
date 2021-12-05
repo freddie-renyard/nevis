@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class Encoder:
     
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post):
         """ Creates the appropriate parameters needed for the encoder module in hardware. On initialisation, the 
         class runs the compilation of all the relevant model parameters and stores them
         as attributes of the instance of the class.
@@ -74,25 +74,29 @@ class Encoder:
         None.
         """
 
+        # Range of x is confined to 0.99... to -1 (Q0.x)
+        self.n_x = n_x
+        self.radix_x = radix_x
+
+        self.n_neurons = n_neurons
+
         self.input_dims = np.shape(encoder_list)[-1]
         print(self.input_dims)
 
         if self.input_dims == 1:
             # Multiply the gains by their respective encoder values and divide by RC constant.
             self.eg_trc_list = [(x * y) / t_rc for x, y in zip(gain_list, encoder_list)]
+            self.n_phi = 0
         else:
             # Omit the encoders from the multiplication, as the dimensionality is higher than 1.
             self.eg_trc_list = [x / t_rc for x in gain_list]
             # Transpose the encoders to make looping over them easier later in compilation.
             self.encoders = np.transpose(encoder_list)
+            logger.info(self.encoders)
+            logger.info("Compiling phis...")
+            self.compile_and_save_encoders(radix_phi=radix_phi)
 
         self.b_trc_list = [x / t_rc for x in bias_list]
-
-        # Range of x is confined to 0.99... to -1 (Q0.x)
-        self.n_x = n_x
-        self.radix_x = radix_x
-
-        self.n_neurons = n_neurons
 
         # Compute params needed to represent the refractory period.
         self.ref_value, self.n_r = self.calculate_refractory_params(ref_period)
@@ -244,10 +248,10 @@ class Encoder:
         return running_mem_total
 
 class Encoder_Fixed(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, n_dv_post, index, verbose=False):
+    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
         self.radix_g = radix_g
         self.radix_b = radix_b
-        super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post)
+        super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         self.comp_gain_list, self.n_g = Compiler.compile_floats(self.eg_trc_list, self.radix_g, verbose=verbose)
@@ -261,14 +265,14 @@ class Encoder_Floating(Encoder):
         self.radix_g_mantissa = radix_g
         self.radix_b_mantissa = radix_b
 
-        super().__init__(n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, n_dv_post)
+        super().__init__(n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         exp_limit = 15
         self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
         self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
 
-        self.compile_and_save_encoders(radix_phi=radix_phi)
+        
         self.save_params(index, floating=True)
 
 class Synapses:

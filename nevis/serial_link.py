@@ -88,10 +88,17 @@ class FPGAPort:
         
         # Scale the input value up
         in_scale = 2 ** (self.input_depth - 1)
-        output_num = int(d[0] * in_scale)
-        in_total = bitstring.Bits(int=output_num, length=self.bytes_to_send*8)
-        print(in_total.bin, len(in_total.bytes))
-        
+
+        full_tx_word = ""
+        d = d[0:int(len(d)/2)]
+        for value in d:
+            
+            output_num = int(value * in_scale)
+            bit_obj = bitstring.Bits(int=output_num, length=self.input_depth)
+            full_tx_word += bit_obj.bin
+        in_total = bitstring.Bits(bin=full_tx_word)
+        #print(in_total.bin, len(in_total.bytes))
+
         try:
             self.link_addr.write(in_total.bytes)
         except:
@@ -112,7 +119,7 @@ class FPGAPort:
                 
                 bytes_obj = bitstring.BitArray(bin=data[(self.n_values-i-1)*self.output_depths:self.output_depths*(self.n_values-i)])
                 bytes_obj = bytes_obj.int
-                hardware_vals[i] = bytes_obj / (2 ** self.output_scales)
+                hardware_vals[i] = bytes_obj / (2 ** (self.output_scales))
                 
         return hardware_vals
 
