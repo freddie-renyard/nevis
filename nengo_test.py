@@ -1,12 +1,13 @@
 import nengo
 from nengo.network import Network
+from numpy.core.numeric import True_
 from nevis.global_tools import Global_Tools
 from nevis.nevis_networks import NevisEnsembleNetwork
 import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return np.sin(t *0.5* 2*np.pi), np.cos(t *0.5* 2*np.pi)
+    return np.sin(t *0.5* 2*np.pi) #, np.cos(t *0.5* 2*np.pi), np.sin(t *0.25* 2*np.pi), np.cos(t *0.25* 2*np.pi)
 
 def target_function(x):
     """
@@ -18,53 +19,40 @@ def target_function(x):
     return x
 
 # Define, build and run a simple NeVIS model
-def run_simple_fpga_model():
-    with model:
-
-        input_node = nengo.Node(input_func)
-
-        t_pstc = Global_Tools.inverse_pstc(128, 0.001)
-        tau_rc = Global_Tools.inverse_rc(8, 0.001)
-
-        fpga_ens = NevisEnsembleNetwork(
-            n_neurons=50,
-            dimensions=2,
-            compile_design=False,
-            t_pstc=t_pstc,
-            tau_rc=tau_rc,
-            function=target_function
-        )
-        nengo.Connection(input_node, fpga_ens.input)
-        #nengo.Connection(fpga_ens.output, fpga_ens.input)
-        
-        a = nengo.Ensemble(n_neurons=50, 
-            dimensions=2, 
-            neuron_type=nengo.neurons.LIF(tau_rc)
-        )
-        
-        nengo.Connection(input_node, a)
-        output_node = nengo.Node(size_in=2
-        )
-        
-        nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
-
-# Define, build and run a default Nengo network
-def run_default_model():
-    with model:
-
-        stim = nengo.Node([0])
-        a = nengo.Ensemble(n_neurons=50, 
-            dimensions=1
-        )
-
-        nengo.Connection(stim, a)
-        out = nengo.Node(size_in=2)
-        nengo.Connection(a, out, function=target_function)
-
 model = nengo.Network()
 
-run_simple_fpga_model()
+with model:
 
+    input_node = nengo.Node(input_func)
+
+    t_pstc = Global_Tools.inverse_pstc(128, 0.001)
+    tau_rc = Global_Tools.inverse_rc(8, 0.001)
+
+    neurons = 50
+    dimensions = 4
+
+    fpga_ens = NevisEnsembleNetwork(
+        n_neurons=neurons,
+        dimensions=dimensions,
+        compile_design=False,
+        t_pstc=t_pstc,
+        tau_rc=tau_rc,
+        function=target_function
+    )
+    nengo.Connection(input_node, fpga_ens.input)
+    
+    a = nengo.Ensemble(
+        n_neurons=neurons, 
+        dimensions=dimensions, 
+        neuron_type=nengo.neurons.LIF(tau_rc)
+    )
+    
+    nengo.Connection(input_node, a)
+    output_node = nengo.Node(size_in=dimensions
+    )
+    
+    nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
+    
 import nengo_gui
 nengo_gui.GUI(__file__).start()
 

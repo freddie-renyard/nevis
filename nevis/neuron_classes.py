@@ -92,9 +92,11 @@ class Encoder:
             self.eg_trc_list = [x / t_rc for x in gain_list]
             # Transpose the encoders to make looping over them easier later in compilation.
             self.encoders = np.transpose(encoder_list)
+            # Flatten the maxtrix to force consistent param compilation across all encoders.
+            flat_encoders = self.encoders.flatten()
             logger.info(self.encoders)
             logger.info("Compiling phis...")
-            self.compile_and_save_encoders(radix_phi=radix_phi)
+            self.compile_and_save_encoders(target_list = flat_encoders, radix_phi=radix_phi)
 
         self.b_trc_list = [x / t_rc for x in bias_list]
 
@@ -162,17 +164,17 @@ class Encoder:
 
         return int(refractory), int(bit_width)
     
-    def compile_and_save_encoders(self, radix_phi):
+    def compile_and_save_encoders(self, target_list, radix_phi):
         """This method will determine if the encoder dimensionality is more
         than 1, and whether an encoder list will need to be compiled and saved.
         """
-        self.comp_encoder_concat = [""] * self.n_neurons
+        self.comp_encoder_concat = [""] * (self.n_neurons)
         if self.input_dims != 1:
-            for enc_dim in self.encoders:
-                print(enc_dim)
-                comp_enc_list, self.n_phi = Compiler.compile_floats(enc_dim, radix_phi, verbose=True)
-                for i, comp_str in enumerate(comp_enc_list):
-                    self.comp_encoder_concat[i] = self.comp_encoder_concat[i] + comp_str
+            comp_enc_list, self.n_phi = Compiler.compile_floats(target_list, radix_phi, verbose=True)
+            comp_enc_struct = np.reshape(comp_enc_list, (self.input_dims, self.n_neurons))
+            for compiled_str in comp_enc_struct:
+                for i, string in enumerate(compiled_str):
+                    self.comp_encoder_concat[i] = string + self.comp_encoder_concat[i]
 
     def save_params(self, index, floating=True, running_mem_total=0):
 
@@ -492,6 +494,8 @@ class Synapses_Floating(Synapses):
         self.n_w_exp = None
         for i, weight_list in enumerate(self.weights):
             comp_weights, n_w_man, n_w_exp = Compiler.compile_to_float(weight_list, self.radix_w, exp_limit, highest_exp, verbose=verbose)
+            logger.info("Weights {}".format(i+1))
+            logger.info("{} {}".format(n_w_man, n_w_exp))
             self.comp_weights_list.append(comp_weights)
 
             if self.n_w_man is not None or self.n_w_exp is not None:
