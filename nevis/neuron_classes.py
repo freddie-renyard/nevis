@@ -339,37 +339,8 @@ class Synapses:
         logger.info(self.weights)
         
         self.comp_activation = []
-        self.comp_trait_bits = []
         for _ in range(self.output_dims):
             self.comp_activation.append(self.compile_activations(n_activ=self.n_activ, n_neuron=1))
-            self.comp_trait_bits.append(self.compile_traits(encoders_list))
-
-    def compile_traits(self, encoders):
-        """ Compiles the encoders into a list of 'trait' bits, which are used in
-        the synaptic module for performing the dot product with the weights to 
-        save memory usage. These bits are 0 for a neuron which reponds with a 
-        positive weight, and 1 for a neuron which responds with a negative weight.
-
-        Parameters
-        ----------
-        encoders: [Any]
-            The list of encoders to be compiled.
-
-        Returns
-        -------
-        comp_traits: [str]
-            The compiled 'trait' bits in a list, ready for saving to .mem file.
-        """
-
-        comp_traits = []
-        for element in encoders:
-            if element == 1:
-                comp_traits.append('0')
-            elif element == -1:
-                comp_traits.append('1')
-            else:
-                comp_traits.append('ERROR')
-        return comp_traits
     
     def compile_activations(self, n_activ, n_neuron): 
         """ Compiles the start file for the synaptic activations.
@@ -400,12 +371,11 @@ class Synapses:
         
         index = str(pre_index) + "C"
 
-        for i, compiled_lists in enumerate(zip(self.comp_weights_list, self.comp_activation, self.comp_trait_bits)):
+        for i, compiled_lists in enumerate(zip(self.comp_weights_list, self.comp_activation)):
 
             names = [
                 "weights_compiled",
-                "activations_compiled",
-                "trait_bits_compiled"
+                "activations_compiled"
             ]
 
             for param_pair in zip(compiled_lists, names):
