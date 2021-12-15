@@ -90,11 +90,13 @@ class Encoder:
         else:
             # Omit the encoders from the multiplication, as the dimensionality is higher than 1.
             self.eg_trc_list = [x / t_rc for x in gain_list]
-            # Transpose the encoders to make looping over them easier later in compilation.
-            self.encoders = np.transpose(encoder_list)
+            
+            self.encoders = encoder_list
             # Flatten the maxtrix to force consistent param compilation across all encoders.
             flat_encoders = self.encoders.flatten()
+            
             logger.info(self.encoders)
+            logger.info(flat_encoders)
             logger.info("Compiling phis...")
             self.compile_and_save_encoders(target_list = flat_encoders, radix_phi=radix_phi)
 
@@ -108,7 +110,6 @@ class Encoder:
 
         # Declaring class attributes to compile
         self.n_dv_post = n_dv_post
-
 
     def compile_nau_start_params(self, n_activ, n_neuron, n_ref): 
         """ Compiles the start file for the NAU.
@@ -170,8 +171,8 @@ class Encoder:
         """
         self.comp_encoder_concat = [""] * (self.n_neurons)
         if self.input_dims != 1:
-            comp_enc_list, self.n_phi = Compiler.compile_floats(target_list, radix_phi, verbose=True)
-            comp_enc_struct = np.reshape(comp_enc_list, (self.input_dims, self.n_neurons))
+            self.comp_enc_list, self.n_phi = Compiler.compile_floats(target_list, radix_phi, verbose=True)
+            comp_enc_struct = np.reshape(self.comp_enc_list, (self.input_dims, self.n_neurons))
             for compiled_str in comp_enc_struct:
                 for i, string in enumerate(compiled_str):
                     self.comp_encoder_concat[i] = string + self.comp_encoder_concat[i]
@@ -205,7 +206,7 @@ class Encoder:
             logger.info("INFO: Saving encoder phi vectors to binary .mem file as %s", filename)
             running_mem_total = Filetools.save_to_file(
                 filename=filename,
-                target_list=self.comp_encoder_concat,
+                target_list=self.comp_enc_list,
                 running_mem_total=running_mem_total
             )
 

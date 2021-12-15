@@ -7,7 +7,7 @@ import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return np.sin(t * 2*np.pi)
+    return 1 #np.sin(t * 2*np.pi)
 
 def target_function(x):
     return x
@@ -33,8 +33,9 @@ with model:
         function=target_function
     )
     nengo.Connection(stim, fpga_ens.input)
+    #nengo.Connection(fpga_ens.output, fpga_ens.input)
 
-    nevis_out = nengo.Probe(fpga_ens.output)
+    nevis_out = nengo.Probe(fpga_ens.input)
 
     a = nengo.Ensemble(
         n_neurons=neuron_n, 
@@ -45,9 +46,11 @@ with model:
     spikes = nengo.Probe(a.neurons)
 
     nengo.Connection(stim, a)
-    
+    #nengo.Connection(a, a)
+    print(a.probeable)
     output_node = nengo.Node(size_in=dimensions)
-    probe = nengo.Probe(output_node)
+    in_probe = nengo.Probe(a, attr='input')
+    out_probe = nengo.Probe(output_node)
     
     nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
 
@@ -57,6 +60,9 @@ with nengo.Simulator(model) as sim:
         spike_lst = [i for i, x in enumerate(sim.data[spikes][-1] > 0) if x]
         print("Timestep:           ", step)
         print("Spikes:             ", spike_lst)
-        print("Nengo output value: ", sim.data[probe][-1])
+
+        print("Nengo input value: ", sim.data[in_probe][-1])
+        print("Nengo output value: ", sim.data[out_probe][-1])
+
         print("NeVIS output value: ", sim.data[nevis_out][-1])
         input(" ")

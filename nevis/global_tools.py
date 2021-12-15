@@ -29,7 +29,6 @@ class Global_Tools:
 
     def plot_dynamic_range(input_list, bins, name="[no name given]"):
         
-
         data_no = len(input_list)
 
         i = 1

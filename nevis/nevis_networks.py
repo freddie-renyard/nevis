@@ -102,7 +102,7 @@ class NevisEnsembleNetwork(nengo.Network):
         timeout=2,
         compile_design=True,
         label=None,
-        seed=None,
+        seed=30,
         add_to_container=None,
         t_pstc=0.1275,
         verbose=False
