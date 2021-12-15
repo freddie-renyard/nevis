@@ -147,7 +147,8 @@ class NevisEnsembleNetwork(nengo.Network):
                 neuron_type = self.neuron_type,
                 eval_points = eval_points,
                 label       = " ",
-                seed        = self.seed
+                seed        = self.seed,
+                radius      = 1
             )
             nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
             
