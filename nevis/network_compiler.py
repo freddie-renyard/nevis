@@ -5,6 +5,7 @@ from nevis.neuron_classes import Synapses_Floating, Encoder_Floating
 from nevis.config_tools import ConfigTools
 import numpy as np
 import nengo
+from matplotlib import pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class NevisCompiler:
         # the list created above. These contain the Connections
         # and BuiltConnections.
         node_num = len(obj_lst_obj)
-        adj_mat_obj = adj_mat_params = np.zeros([node_num, node_num])
+        adj_mat_obj = adj_mat_params = adj_mat_visual = np.zeros([node_num, node_num])
         
         adj_mat_obj = adj_mat_obj.astype(nengo.Connection)
 
@@ -63,7 +64,29 @@ class NevisCompiler:
                         if edge.post_obj == post_node:
                             adj_mat_obj[i][j] = edge
                             adj_mat_params[i][j] = param_model.params[edge]
+                            adj_mat_visual[i][j] = 1
         
+        # High level overview:
+        # 1. Begin iterating through the source objects.
+        # 2. Generate the source object.
+        # 3. Add its Verilog template to the open nevis_top.sv file
+        # 4. Iterate over its connections.
+        # 5. Generate the connection object.
+        # 6. Add its Verilog template to the open nevis_top.sv file
+        # A note on compiling Verilog: have the scripts inside the 
+        #   objects, but pass in some connection based parameters from 
+        #   outside.
+
+        #plt.matshow(adj_mat_visual)
+        #plt.show()
+
+        print()
+
+    @classmethod
+    def generate_nevis_ensemble(cls, ens_obj, ens_params):
+        """This method inputs a Nengo ensemble (both object and built obj if needed)
+        and returns a NeVIS Encoder object.
+        """
         print()
 
     @classmethod
@@ -110,6 +133,7 @@ class NevisCompiler:
         # Compile an ensemble (NeVIS - Encoder)
         input_hardware = Encoder_Floating(
             n_neurons       = ens_args["n_neurons"],
+            input_num       = 1, # cannot calculate this for single ensembles.
             gain_list       = ens_args["gain"],
             encoder_list    = ens_args["encoders"],
             bias_list       = ens_args["bias"],

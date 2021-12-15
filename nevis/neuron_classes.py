@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class Encoder:
     
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post):
+    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post):
         """ Creates the appropriate parameters needed for the encoder module in hardware. On initialisation, the 
         class runs the compilation of all the relevant model parameters and stores them
         as attributes of the instance of the class.
@@ -80,8 +80,11 @@ class Encoder:
 
         self.n_neurons = n_neurons
 
+        # Input vecotr dimensions.
         self.input_dims = np.shape(encoder_list)[-1]
-        print(self.input_dims)
+        
+        # Number of inputs (Fan-in)
+        self.input_num = input_num
 
         if self.input_dims == 1:
             # Multiply the gains by their respective encoder values and divide by RC constant.
@@ -90,7 +93,7 @@ class Encoder:
         else:
             # Omit the encoders from the multiplication, as the dimensionality is higher than 1.
             self.eg_trc_list = [x / t_rc for x in gain_list]
-            
+  
             self.encoders = encoder_list
             # Flatten the maxtrix to force consistent param compilation across all encoders.
             flat_encoders = self.encoders.flatten()
@@ -222,6 +225,7 @@ class Encoder:
         # Dot product params
         verilog_header.write(('N_PHI_' + index + ' = ' + str(self.n_phi) + ',' + '\n'))
         verilog_header.write(('INPUT_DIMS_' + index + ' = ' + str(self.input_dims) + ',' + '\n'))
+        verilog_header.write(('INPUT_NUM_' + index + ' = ' + str(self.input_num) + ',' + '\n'))
 
         # NAU Params
         verilog_header.write(('N_R_' + index + ' = ' + str(self.n_r)  + ',' + '\n'))
@@ -251,10 +255,10 @@ class Encoder:
         return running_mem_total
 
 class Encoder_Fixed(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
+    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
         self.radix_g = radix_g
         self.radix_b = radix_b
-        super().__init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
+        super().__init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         self.comp_gain_list, self.n_g = Compiler.compile_floats(self.eg_trc_list, self.radix_g, verbose=verbose)
@@ -263,12 +267,12 @@ class Encoder_Fixed(Encoder):
         self.save_params(index, floating=False)
 
 class Encoder_Floating(Encoder):
-    def __init__(self, n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
+    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
 
         self.radix_g_mantissa = radix_g
         self.radix_b_mantissa = radix_b
 
-        super().__init__(n_neurons, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
+        super().__init__(n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
 
         # Compile the gain and bias into seperate lists.
         exp_limit = 15
