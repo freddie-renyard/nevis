@@ -2,7 +2,7 @@ import nengo
 from nengo.network import Network
 from numpy.core.numeric import True_
 from nevis.global_tools import Global_Tools
-from nevis.nevis_networks import NevisEnsembleNetwork
+from nevis.network_compiler import NevisCompiler
 import numpy as np
 
 # Define the input function to the neural population
@@ -26,12 +26,22 @@ with model:
         dimensions=1,
         neuron_type=nengo.neurons.LIF(tau_rc)
     )
-
+    
+    b = nengo.Ensemble(
+        n_neurons=50, 
+        dimensions=1,
+        neuron_type=nengo.neurons.LIF(tau_rc)
+    )
 
     nengo.Connection(stim, a)
+    nengo.Connection(stim, b)
     output_node = nengo.Node(size_in=1)
+    output_node_2 = nengo.Node(size_in=1)
     
     nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
+    nengo.Connection(b, output_node_2, synapse=t_pstc, function=target_function)
+
+NevisCompiler.compile_network(model)
 
 import nengo_gui
 nengo_gui.GUI(__file__).start()

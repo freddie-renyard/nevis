@@ -4,10 +4,67 @@ import logging
 from nevis.neuron_classes import Synapses_Floating, Encoder_Floating
 from nevis.config_tools import ConfigTools
 import numpy as np
+import nengo
 
 logger = logging.getLogger(__name__)
 
-class NetworkCompiler:
+class NevisCompiler:
+
+    @classmethod
+    def compile_network(cls, model):
+        """Builds a model into a NeVIS network representation, ready for synthesis.
+        """
+
+        # Build the model, to allow for parameter exrtraction.
+        param_model = nengo.builder.Model()
+        nengo.builder.network.build_network(param_model, model)
+        
+        print()
+        
+        # Create two object lists which hold the objects and
+        # their associated built parameters.
+        obj_lst_obj = []
+        obj_lst_params = []
+
+        # Add all nodes on the network graph to a list.
+        for node in model.nodes:
+            obj_lst_obj.append(node)
+            obj_lst_params.append(param_model.params[node])
+
+        for ensemble in model.ensembles:
+            obj_lst_obj.append(ensemble)
+            obj_lst_params.append(param_model.params[ensemble])
+
+        # Create two adjacency matrices which correspond to
+        # the list created above. These contain the Connections
+        # and BuiltConnections.
+        node_num = len(obj_lst_obj)
+        adj_mat_obj = adj_mat_params = np.zeros([node_num, node_num])
+        
+        adj_mat_obj = adj_mat_obj.astype(nengo.Connection)
+
+        param_class = type(param_model.params[model.connections[1]])
+        adj_mat_params = adj_mat_params.astype(param_class)
+        
+        #print(model.connections)
+        #print(param_model.params[model.ensembles[0]])
+
+        # A note on convention: the first index of the 
+        # adjacency matrix refers to the 'source' object 
+        # on the directed graph, and the second index 
+        # refers to the 'sink' e.g. a connection at 
+        # adj_mat[1][2] would indicate a connection
+        # from node at index 1 in obj_lst to the node
+        # at index 2.
+        for edge in model.connections:
+            for i, pre_node in enumerate(obj_lst_obj):
+                if edge.pre_obj == pre_node:
+                    for j, post_node in enumerate(obj_lst_obj):
+                        if edge.post_obj == post_node:
+                            adj_mat_obj[i][j] = edge
+                            adj_mat_params[i][j] = param_model.params[edge]
+        
+        print()
 
     @classmethod
     def compile_ensemble(cls, model, network):

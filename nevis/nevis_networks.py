@@ -16,7 +16,7 @@ import os
 import sys
 from subprocess import check_call
 from nevis.global_tools import Global_Tools
-from nevis.network_compiler import NetworkCompiler
+from nevis.network_compiler import NevisCompiler
 
 from nevis.serial_link import FPGAPort
 
@@ -205,7 +205,7 @@ def compile_and_save_params(model, network):
         nengo.builder.network.build_network(param_model, network)
 
         # Compile the network and save params to .mem files.
-        NetworkCompiler.compile_ensemble(param_model, network)
+        NevisCompiler.compile_ensemble(param_model, network)
 
         call_synthesis_server()
 
