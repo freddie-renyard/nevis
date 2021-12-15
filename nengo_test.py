@@ -7,7 +7,7 @@ import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return np.sin(t *0.5* 2*np.pi) #, np.cos(t *0.5* 2*np.pi), np.sin(t *0.25* 2*np.pi), np.cos(t *0.25* 2*np.pi)
+    return np.sin(t *0.5* 2*np.pi), np.cos(t *0.5* 2*np.pi), np.sin(t *0.25* 2*np.pi), np.cos(t *0.25* 2*np.pi)
 
 def target_function(x):
     """
@@ -29,7 +29,7 @@ with model:
     tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
     neurons = 200
-    dimensions = 1
+    dimensions = 4
 
     fpga_ens = NevisEnsembleNetwork(
         n_neurons=neurons,

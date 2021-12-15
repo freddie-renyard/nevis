@@ -11,8 +11,25 @@ logger = logging.getLogger(__name__)
 
 class NevisCompiler:
 
-    @classmethod
-    def compile_network(cls, model):
+    def __init__(self):
+
+        # Define the compiler params. TODO write some profiles which will allow
+        # for a selection of different modes - e.g. high precision, efficient
+        # with space, etc.
+        self.comp_args = {}
+        self.comp_args["radix_encoder"]  = 10
+        self.comp_args["bits_input"]     = 8
+        self.comp_args["radix_phi"]      = 5
+        self.comp_args["radix_weights"]  = 7
+        self.comp_args["n_dv_post"]      = 10
+        self.comp_args["n_activ_extra"]  = 3
+        self.comp_args["min_float_val"]  = 1*2**-50
+
+        # Gather simulation parameters - identical across all ensembles
+        self.sim_args = {}
+        self.sim_args["dt"] = 0.001 # Default value; overridden in main compiler.
+
+    def compile_network(self, model):
         """Builds a model into a NeVIS network representation, ready for synthesis.
         """
 
@@ -82,56 +99,32 @@ class NevisCompiler:
 
         print()
 
-    @classmethod
-    def generate_nevis_ensemble(cls, ens_obj, ens_params):
+    def generate_nevis_ensemble(self, ens_obj, ens_params):
         """This method inputs a Nengo ensemble (both object and built obj if needed)
         and returns a NeVIS Encoder object.
         """
-        print()
-
-    @classmethod
-    def compile_ensemble(cls, model, network):
-        """ This function has many arguments prespecified, as full network compilation
-        is not supported yet. These will gradually be phased out as more functionality
-        is added.
-        """
-
-        # Gather simulation parameters - identical across all ensembles
-        sim_args = {}
-        sim_args["dt"] = model.dt
-
-        # Define the compiler params. TODO write an optimiser function to
-        # define these params automatically.
-        comp_args = {}
-        comp_args["radix_encoder"]  = 10
-        comp_args["bits_input"]     = 8
-        comp_args["radix_input"]    = comp_args["bits_input"] - 1
-        comp_args["radix_phi"]      = 5
-        comp_args["radix_weights"]  = 7
-        comp_args["n_dv_post"]      = 10
-        comp_args["n_activ_extra"]  = 3
-        comp_args["min_float_val"]  = 1*2**-50
 
         # Gather ensemble parameters - vary between ensembles
         ens_args = {}
-        ens_args["n_neurons"]           = network.ensemble.n_neurons
-        ens_args["input_dimensions"]    = network.input_dimensions
-        ens_args["output_dimensions"]   = network.output_dimensions
-        ens_args["bias"]                = model.params[network.ensemble].bias
-        ens_args["t_rc"]                = network.ensemble.neuron_type.tau_rc
-        ens_args["t_rc"]                = ens_args["t_rc"] / sim_args["dt"]
-        
+        ens_args["n_neurons"]           = ens_obj.n_neurons
+        ens_args["input_dimensions"]    = ens_obj.size_in
+        ens_args["output_dimensions"]   = ens_obj.size_out
+        ens_args["bias"]                = ens_params.bias
+        ens_args["t_rc"]                = ens_obj.neuron_type.tau_rc
+        ens_args["t_rc"]                = ens_args["t_rc"] / self.sim_args["dt"]
+        ens_args["radix_input"]         = self.comp_args["bits_input"] - 1 # TODO Needs to take into account the radius.
+ 
         # scaled_encoders = gain * encoders
         # TODO this is computationally wasteful, but the way that the Encoder 
         # object is designed at present makes the code below the most readable 
         # solution. Change the Encoder so that this is not the case.
-        ens_args["encoders"]    = model.params[network.ensemble].encoders
-        ens_args["gain"]        = model.params[network.ensemble].gain
+        ens_args["encoders"]    = ens_params.encoders
+        ens_args["gain"]        = ens_params.gain
         # Gather refractory period
-        ens_args["ref_period"]  = network.ensemble.neuron_type.tau_ref / sim_args["dt"]
+        ens_args["ref_period"]  = ens_obj.neuron_type.tau_ref / self.sim_args["dt"]
 
         # Compile an ensemble (NeVIS - Encoder)
-        input_hardware = Encoder_Floating(
+        nevis_ensemble = Encoder_Floating(
             n_neurons       = ens_args["n_neurons"],
             input_num       = 1, # cannot calculate this for single ensembles.
             gain_list       = ens_args["gain"],
@@ -139,14 +132,27 @@ class NevisCompiler:
             bias_list       = ens_args["bias"],
             t_rc            = ens_args["t_rc"],
             ref_period      = ens_args["ref_period"],
-            n_x             = comp_args["bits_input"],
-            radix_x         = comp_args["radix_input"],
-            radix_g         = comp_args["radix_encoder"],
-            radix_b         = comp_args["radix_encoder"],
-            radix_phi       = comp_args["radix_phi"],
-            n_dv_post       = comp_args["n_dv_post"],
+            n_x             = self.comp_args["bits_input"],
+            radix_x         = ens_args["radix_input"],
+            radix_g         = self.comp_args["radix_encoder"],
+            radix_b         = self.comp_args["radix_encoder"],
+            radix_phi       = self.comp_args["radix_phi"],
+            n_dv_post       = self.comp_args["n_dv_post"],
             index           = 0,
             verbose=False
+        )
+
+        return nevis_ensemble
+
+    def compile_ensemble(self, model, network):
+        """ This function has many arguments prespecified, as full network compilation
+        is not supported yet. These will gradually be phased out as more functionality
+        is added.
+        """
+
+        input_hardware = self.generate_nevis_ensemble(
+            ens_obj     = network.ensemble,
+            ens_params  = model.params[network.ensemble]
         )
 
         # Tool for painlessly investigating the parameters of Nengo objects
@@ -155,21 +161,21 @@ class NevisCompiler:
         conn_args = {}
         conn_args["weights"]    = model.params[network.connection].weights
         conn_args["t_pstc"]     = network.connections[0].synapse.tau
-        conn_args["t_pstc"]     = conn_args["t_pstc"] / sim_args["dt"]
+        conn_args["t_pstc"]     = conn_args["t_pstc"] / self.sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
         conn_args["n_output"]   = 10
         logger.info("t_pstc: %f", conn_args["t_pstc"])
 
         # Compile an output node (Nevis - Synapses)
         output_hardware = Synapses_Floating(
-            n_neurons       = ens_args["n_neurons"],
+            n_neurons       = input_hardware.n_neurons,
             pstc_scale      = conn_args["pstc_scale"],
             decoders_list   = conn_args["weights"], 
             encoders_list   = [1], # Indicates a positive weight addition
-            n_activ_extra   = comp_args["n_activ_extra"],
+            n_activ_extra   = self.comp_args["n_activ_extra"],
             n_output        = conn_args["n_output"],
-            radix_w         = comp_args["radix_weights"],
-            minimum_val     = comp_args["min_float_val"],
+            radix_w         = self.comp_args["radix_weights"],
+            minimum_val     = self.comp_args["min_float_val"],
             pre_index       = 0,
             post_start_index= 1,
             verbose         = True

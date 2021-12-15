@@ -205,7 +205,10 @@ def compile_and_save_params(model, network):
         nengo.builder.network.build_network(param_model, network)
 
         # Compile the network and save params to .mem files.
-        NevisCompiler.compile_ensemble(param_model, network)
+        compiler = NevisCompiler().compile_ensemble(
+            model   = param_model, 
+            network = network
+        )
 
         call_synthesis_server()
 
