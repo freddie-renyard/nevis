@@ -24,7 +24,6 @@ class NevisCompiler:
         self.comp_args["n_dv_post"]      = 10
         self.comp_args["n_activ_extra"]  = 3
         self.comp_args["min_float_val"]  = 1*2**-50
-        self.comp_args["n_output"]       = 10
 
         # Gather simulation parameters - identical across all ensembles
         self.sim_args = {}
@@ -145,30 +144,11 @@ class NevisCompiler:
 
         return nevis_ensemble
 
-    def generate_nevis_connection(self, conn_obj, conn_params, index_pre, index_post):
+    def generate_nevis_connection(self):
         """This method generates a Connection (an edge on the 
         Nengo graph); Returns a NeVIS Connection object (Synapses).
         """
-
-        conn_args = {}
-        conn_args["weights"]    = conn_params.weights
-        conn_args["t_pstc"]     = conn_obj.synapse.tau
-        conn_args["t_pstc"]     = conn_args["t_pstc"] / self.sim_args["dt"]
-        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
-
-        # Compile an output node (Nevis - Synapses)
-        output_hardware = Synapses_Floating(
-            pstc_scale      = conn_args["pstc_scale"],
-            decoders_list   = conn_args["weights"], 
-            encoders_list   = [1], # Indicates a positive weight addition
-            n_activ_extra   = self.comp_args["n_activ_extra"],
-            n_output        = self.comp_args["n_output"],
-            radix_w         = self.comp_args["radix_weights"],
-            minimum_val     = self.comp_args["min_float_val"],
-            pre_index       = 0,
-            post_start_index= 1,
-            verbose         = True
-        )
+        print()
 
     def compile_ensemble(self, model, network):
         """ This function has many arguments prespecified, as full network compilation
@@ -183,13 +163,32 @@ class NevisCompiler:
             input_num   = 1
         )
 
-        output_hardware = self.generate_nevis_connection(
-            conn_obj    = network.connection,
-            conn_params = model.params[network.connection],
-            index_pre   = 0,
-            index_post  = 1
-        )
+        # Tool for painlessly investigating the parameters of Nengo objects
+        #l = dir(network.connections[1])
         
+        conn_args = {}
+        conn_args["weights"]    = model.params[network.connection].weights
+        conn_args["t_pstc"]     = network.connections[0].synapse.tau
+        conn_args["t_pstc"]     = conn_args["t_pstc"] / self.sim_args["dt"]
+        conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
+        conn_args["n_output"]   = 10
+        logger.info("t_pstc: %f", conn_args["t_pstc"])
+
+        # Compile an output node (Nevis - Synapses)
+        output_hardware = Synapses_Floating(
+            n_neurons       = input_hardware.n_neurons,
+            pstc_scale      = conn_args["pstc_scale"],
+            decoders_list   = conn_args["weights"], 
+            encoders_list   = [1], # Indicates a positive weight addition
+            n_activ_extra   = self.comp_args["n_activ_extra"],
+            n_output        = conn_args["n_output"],
+            radix_w         = self.comp_args["radix_weights"],
+            minimum_val     = self.comp_args["min_float_val"],
+            pre_index       = 0,
+            post_start_index= 1,
+            verbose         = True
+        )
+
         # Save the compiled models's parameters in a JSON file
         # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
@@ -197,6 +196,6 @@ class NevisCompiler:
             out_node_depth  = output_hardware.n_output,
             out_node_scale  = output_hardware.n_output-4,
             n_input_values  = 1,
-            n_output_values = output_hardware.output_dims
+            n_output_values = np.shape(conn_args["weights"])[0]
         )
 

@@ -339,6 +339,7 @@ class Synapses:
         logger.info(self.weights)
         
         self.comp_activation = []
+        self.comp_trait_bits = []
         for _ in range(self.output_dims):
             self.comp_activation.append(self.compile_activations(n_activ=self.n_activ, n_neuron=1))
     
@@ -440,12 +441,10 @@ class Synapses_Fixed(Synapses):
 
 class Synapses_Floating(Synapses):
 
-    def __init__(self, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         
         decoders_list = decoders_list * 1
         self.output_dims = np.shape(decoders_list)[0]
-
-        n_neurons = np.shape(decoders_list)[-1]
         
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
