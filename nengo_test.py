@@ -28,7 +28,7 @@ with model:
     t_pstc = Global_Tools.inverse_pstc(128, 0.001)
     tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
-    neurons = 200
+    neurons = 190
     dimensions = 4
 
     fpga_ens = NevisEnsembleNetwork(
