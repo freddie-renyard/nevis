@@ -30,7 +30,15 @@ logger = logging.getLogger(__name__)
 
 class Encoder:
     
-    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post):
+    def __init__(self, 
+            n_neurons, 
+            input_num, 
+            gain_list, encoder_list, bias_list, 
+            t_rc, ref_period, 
+            n_x, radix_x, radix_g, radix_b, radix_phi, 
+            index, 
+            n_dv_post, 
+            verbose):
         """ Creates the appropriate parameters needed for the encoder module in hardware. On initialisation, the 
         class runs the compilation of all the relevant model parameters and stores them
         as attributes of the instance of the class.
@@ -74,6 +82,9 @@ class Encoder:
         None.
         """
 
+        self.radix_g_mantissa = radix_g
+        self.radix_b_mantissa = radix_b
+
         # Range of x is confined to 0.99... to -1 (Q0.x)
         self.n_x = n_x
         self.radix_x = radix_x
@@ -113,6 +124,13 @@ class Encoder:
 
         # Declaring class attributes to compile
         self.n_dv_post = n_dv_post
+
+        # Compile the gain and bias into seperate lists.
+        exp_limit = 15
+        self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
+        self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
+
+        self.save_params(index, floating=True)
 
     def compile_nau_start_params(self, n_activ, n_neuron, n_ref): 
         """ Compiles the start file for the NAU.
@@ -253,22 +271,6 @@ class Encoder:
         verilog_header.close()
 
         return running_mem_total
-
-class Encoder_Floating(Encoder):
-    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
-
-        self.radix_g_mantissa = radix_g
-        self.radix_b_mantissa = radix_b
-
-        super().__init__(n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
-
-        # Compile the gain and bias into seperate lists.
-        exp_limit = 15
-        self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
-        self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
-
-        
-        self.save_params(index, floating=True)
 
 class Synapses:
 

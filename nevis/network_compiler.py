@@ -1,7 +1,7 @@
 import nengo
 import math
 import logging
-from nevis.neuron_classes import Synapses, Encoder_Floating
+from nevis.neuron_classes import Synapses, Encoder
 from nevis.config_tools import ConfigTools
 import numpy as np
 import nengo
@@ -126,7 +126,7 @@ class NevisCompiler:
         ens_args["ref_period"]  = ens_obj.neuron_type.tau_ref / self.sim_args["dt"]
 
         # Compile an ensemble (NeVIS - Encoder)
-        nevis_ensemble = Encoder_Floating(
+        nevis_ensemble = Encoder(
             n_neurons       = ens_args["n_neurons"],
             input_num       = input_num, 
             gain_list       = ens_args["gain"],
