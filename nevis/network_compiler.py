@@ -1,7 +1,7 @@
 import nengo
 import math
 import logging
-from nevis.neuron_classes import Synapses_Floating, Encoder_Floating
+from nevis.neuron_classes import Synapses, Encoder_Floating
 from nevis.config_tools import ConfigTools
 import numpy as np
 import nengo
@@ -23,6 +23,8 @@ class NevisCompiler:
         self.comp_args["radix_weights"]  = 7
         self.comp_args["n_dv_post"]      = 10
         self.comp_args["n_activ_extra"]  = 3
+        self.comp_args["n_connection_output"]   = 10
+
         self.comp_args["min_float_val"]  = 1*2**-50
 
         # Gather simulation parameters - identical across all ensembles
@@ -154,17 +156,14 @@ class NevisCompiler:
         conn_args["t_pstc"]     = conn_obj.synapse.tau
         conn_args["t_pstc"]     = conn_args["t_pstc"] / self.sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
-        conn_args["n_output"]   = 10
-        logger.info("t_pstc: %f", conn_args["t_pstc"])
 
         # Compile an output node (Nevis - Synapses)
-        output_hardware = Synapses_Floating(
+        output_hardware = Synapses(
             n_neurons       = np.shape(conn_params.weights)[-1],
             pstc_scale      = conn_args["pstc_scale"],
             decoders_list   = conn_args["weights"], 
-            encoders_list   = [1], # Indicates a positive weight addition
             n_activ_extra   = self.comp_args["n_activ_extra"],
-            n_output        = conn_args["n_output"],
+            n_output        = self.comp_args["n_connection_output"],
             radix_w         = self.comp_args["radix_weights"],
             minimum_val     = self.comp_args["min_float_val"],
             pre_index       = pre_index,

@@ -254,18 +254,6 @@ class Encoder:
 
         return running_mem_total
 
-class Encoder_Fixed(Encoder):
-    def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
-        self.radix_g = radix_g
-        self.radix_b = radix_b
-        super().__init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_phi, n_dv_post)
-
-        # Compile the gain and bias into seperate lists.
-        self.comp_gain_list, self.n_g = Compiler.compile_floats(self.eg_trc_list, self.radix_g, verbose=verbose)
-        self.comp_bias_list, self.n_b = Compiler.compile_floats(self.b_trc_list, self.radix_b, verbose=verbose)
-
-        self.save_params(index, floating=False)
-
 class Encoder_Floating(Encoder):
     def __init__(self, n_neurons, input_num, gain_list, encoder_list, bias_list, t_rc, ref_period, n_x, radix_x, radix_g, radix_b, radix_phi, n_dv_post, index, verbose=False):
 
@@ -284,7 +272,7 @@ class Encoder_Floating(Encoder):
 
 class Synapses:
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, scale_w, verbose=False):
+    def __init__(self, n_neurons, pstc_scale, decoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
@@ -316,6 +304,16 @@ class Synapses:
         -------
         None.
         """
+
+        decoders_list = decoders_list * 1
+        self.output_dims = np.shape(decoders_list)[0]
+        
+        # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
+        if minimum_val != 0:
+            for i, weight_list in enumerate(decoders_list):
+                decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
+
+        scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
         
         self.radix_w = radix_w
         self.scale_w = scale_w
@@ -342,6 +340,35 @@ class Synapses:
         self.comp_trait_bits = []
         for _ in range(self.output_dims):
             self.comp_activation.append(self.compile_activations(n_activ=self.n_activ, n_neuron=1))
+
+         # Compile the weights
+        highest_exp = 0
+
+        # Calculate the largest exponent needed for each weight list, to ensure the same bit depths across weights.
+        for weight_list in self.weights:
+            new_exp = Compiler.calculate_exponent_depth(weight_list)
+            if new_exp > highest_exp:
+                highest_exp = new_exp
+
+        exp_limit = 1000
+        self.comp_weights_list = []
+        self.n_w_man = None
+        self.n_w_exp = None
+        for i, weight_list in enumerate(self.weights):
+            comp_weights, n_w_man, n_w_exp = Compiler.compile_to_float(weight_list, self.radix_w, exp_limit, highest_exp, verbose=verbose)
+            logger.info("Weights {}".format(i+1))
+            logger.info("{} {}".format(n_w_man, n_w_exp))
+            self.comp_weights_list.append(comp_weights)
+
+            if self.n_w_man is not None or self.n_w_exp is not None:
+                if n_w_man != self.n_w_man or n_w_exp != self.n_w_exp:
+                    logger.error("The compiled bit parameters do not match between weight lists. This will cause unpredictable hardware behaviour.")
+                    logger.info("Recompiling weights with hard limit on higher exponent...")
+            
+            self.n_w = n_w_exp + n_w_man
+            self.n_w_man, self.n_w_exp = n_w_man, n_w_exp
+
+        self.save_params(pre_index, post_start_index, floating=True)
     
     def compile_activations(self, n_activ, n_neuron): 
         """ Compiles the start file for the synaptic activations.
@@ -421,65 +448,3 @@ class Synapses:
             print(max_val)
 
         return scale_val-1
-
-class Synapses_Fixed(Synapses):
-
-    def __init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, index, verbose=False):
-       
-        # TODO add support for multidimensional decoders here.
-
-        scale_w = 5
-        # Scale the weights by the post-synaptic scaling constant.
-        decoders_list = decoders_list*pstc_scale
-
-        super().__init__(self, n_neurons, output_dims, pstc_scale, decoders_list, encoders_list, n_activ_extra, radix_w, scale_w, verbose=False)
-
-        # Compile the weights
-        self.comp_weights_list, self.n_w = Compiler.compile_floats(self.weights, radix_w, verbose=verbose)
-
-        self.save_params(index, floating=False)
-
-class Synapses_Floating(Synapses):
-
-    def __init__(self, n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
-        
-        decoders_list = decoders_list * 1
-        self.output_dims = np.shape(decoders_list)[0]
-        
-        # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
-        if minimum_val != 0:
-            for i, weight_list in enumerate(decoders_list):
-                decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
-
-        scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
-        logger.info("Scale_w for %i: %i", post_start_index, scale_w)
-        super().__init__(n_neurons, pstc_scale, decoders_list, encoders_list, n_activ_extra, n_output, radix_w, scale_w, verbose=False)
-
-        # Compile the weights
-        highest_exp = 0
-
-        # Calculate the largest exponent needed for each weight list, to ensure the same bit depths across weights.
-        for weight_list in self.weights:
-            new_exp = Compiler.calculate_exponent_depth(weight_list)
-            if new_exp > highest_exp:
-                highest_exp = new_exp
-
-        exp_limit = 1000
-        self.comp_weights_list = []
-        self.n_w_man = None
-        self.n_w_exp = None
-        for i, weight_list in enumerate(self.weights):
-            comp_weights, n_w_man, n_w_exp = Compiler.compile_to_float(weight_list, self.radix_w, exp_limit, highest_exp, verbose=verbose)
-            logger.info("Weights {}".format(i+1))
-            logger.info("{} {}".format(n_w_man, n_w_exp))
-            self.comp_weights_list.append(comp_weights)
-
-            if self.n_w_man is not None or self.n_w_exp is not None:
-                if n_w_man != self.n_w_man or n_w_exp != self.n_w_exp:
-                    logger.error("The compiled bit parameters do not match between weight lists. This will cause unpredictable hardware behaviour.")
-                    logger.info("Recompiling weights with hard limit on higher exponent...")
-            
-            self.n_w = n_w_exp + n_w_man
-            self.n_w_man, self.n_w_exp = n_w_man, n_w_exp
-
-        self.save_params(pre_index, post_start_index, floating=True)
