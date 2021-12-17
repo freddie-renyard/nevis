@@ -14,6 +14,5 @@ module nevis_top(
     `include "model_params.vh"
     
     wire global_pulse;
-    localparam BAUD_RATE = 2000000;
     localparam CLK_FREQ_MHZ = 100;
 

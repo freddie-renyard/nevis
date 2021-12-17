@@ -10,6 +10,8 @@ import numpy as np
 import nengo
 from matplotlib import pyplot as plt
 
+from nevis.neuron_classes import UART
+
 logger = logging.getLogger(__name__)
 
 class NevisCompiler:
@@ -107,7 +109,13 @@ class NevisCompiler:
         # This will make absolutely sure that Verilog does not infer 
         # signals if this is not desired.
 
-        nevis_top = open("sv_source/nevis_top.sv").read()
+        uart_obj = UART(
+            baud          = 2000000,
+            n_input_data  = self.comp_args["bits_input"],
+            n_output_data = self.comp_args["n_connection_output"]
+        )
+
+        nevis_top = open("nevis/sv_source/nevis_top.sv").read()
         comp_ensembles = []
         comp_connections = []
         

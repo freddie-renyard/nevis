@@ -275,12 +275,12 @@ class Encoder:
 
     def verilog_wire_declaration(self):    
         
-        output_str = open("sv_source/ensemble_wires.sv").read()
+        output_str = open("nevis/sv_source/ensemble_wires.sv").read()
         return output_str.replace("<i>", str(self.index))
 
     def verilog_mod_declaration(self):
 
-        output_str = open("sv_source/ensemble_mod.sv").read()
+        output_str = open("nevis/sv_source/ensemble_mod.sv").read()
         return output_str.replace("<i>", str(self.index))
         
 class Synapses:
@@ -426,7 +426,7 @@ class Synapses:
     
     def verilog_wire_declaration(self):    
         
-        output_str = open("sv_source/connection_wires.sv").read()
+        output_str = open("nevis/sv_source/connection_wires.sv").read()
         output_str = output_str.replace("<i_pre>", str(self.pre_index))
         return output_str.replace("<i_post>", str(self.post_index))
 
@@ -441,3 +441,25 @@ class Synapses:
             print(max_val)
 
         return scale_val-1
+
+class UART:
+
+    def __init__(self, baud, n_input_data, n_output_data):
+
+        # The width of the input (tx) and output (rx) data words.
+        # This is before they are flattened into a bitstream and 
+        # sent to the FPGA. These must be consistent across all
+        # I/O nodes.
+        self.n_input_data = int(n_input_data)
+        self.n_output_data = int(n_output_data)
+        self.baud = baud
+
+        self.save_params()
+
+    def save_params(self):
+
+        with open("nevis/file_cache/model_params.vh", "a") as verilog_header:
+            verilog_header.write("// UART parameters")
+            verilog_header.write("parameter N_RX = " + str(self.n_input_data) + ",\n")
+            verilog_header.write("N_TX = " + str(self.n_output_data) + ";\n")
+            verilog_header.write("BAUD_RATE = " + str(self.baud) + ";\n\n")
