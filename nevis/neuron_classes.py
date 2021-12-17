@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 class Encoder:
     
     def __init__(self, 
-            n_neurons, 
             input_num, 
             gain_list, encoder_list, bias_list, 
             t_rc, ref_period, 
@@ -45,8 +44,6 @@ class Encoder:
 
         Parameters
         ----------
-        n_neurons: int
-            The number of neurons in the module.
         gain_list: [float]
             The gain parameters of the Nengo model.
         encoder_list: [Any]
@@ -274,15 +271,13 @@ class Encoder:
 
 class Synapses:
 
-    def __init__(self, n_neurons, pstc_scale, decoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
+    def __init__(self, pstc_scale, decoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
 
         Parameters
         ----------
-        n_neurons: int
-            The number of neurons in the module.
         pstc_scale: float
             The model's scaling factor for the post-synaptic filter. For optimal 
             results, the reciprocal of this value must be a power of two as the hardware

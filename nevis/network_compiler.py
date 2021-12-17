@@ -108,7 +108,6 @@ class NevisCompiler:
 
         # Gather ensemble parameters - vary between ensembles
         ens_args = {}
-        ens_args["n_neurons"]           = ens_obj.n_neurons
         ens_args["input_dimensions"]    = ens_obj.size_in
         ens_args["output_dimensions"]   = ens_obj.size_out
         ens_args["bias"]                = ens_params.bias
@@ -127,7 +126,6 @@ class NevisCompiler:
 
         # Compile an ensemble (NeVIS - Encoder)
         nevis_ensemble = Encoder(
-            n_neurons       = ens_args["n_neurons"],
             input_num       = input_num, 
             gain_list       = ens_args["gain"],
             encoder_list    = ens_args["encoders"],
@@ -159,7 +157,6 @@ class NevisCompiler:
 
         # Compile an output node (Nevis - Synapses)
         output_hardware = Synapses(
-            n_neurons       = np.shape(conn_params.weights)[-1],
             pstc_scale      = conn_args["pstc_scale"],
             decoders_list   = conn_args["weights"], 
             n_activ_extra   = self.comp_args["n_activ_extra"],
