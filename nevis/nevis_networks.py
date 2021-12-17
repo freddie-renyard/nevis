@@ -96,6 +96,7 @@ class NevisEnsembleNetwork(nengo.Network):
         n_neurons,
         dimensions,
         tau_rc=0.016,
+        radius = 1,
         function=nengo.Default,
         transform=nengo.Default,
         eval_points=nengo.Default,
@@ -148,7 +149,7 @@ class NevisEnsembleNetwork(nengo.Network):
                 eval_points = eval_points,
                 label       = " ",
                 seed        = self.seed,
-                radius      = 8
+                radius      = radius
             )
             nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
             
@@ -157,7 +158,8 @@ class NevisEnsembleNetwork(nengo.Network):
                 self.output,   # Post object
                 function    = function,
                 transform   = transform,
-                eval_points  = eval_points
+                eval_points  = eval_points,
+                synapse     =t_pstc
             )
 
     def get_output_dims(self, dimensions, function):

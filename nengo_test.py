@@ -1,5 +1,6 @@
 import nengo
 from nengo.network import Network
+from nengo.params import TupleParam
 from numpy.core.numeric import True_
 from nevis.global_tools import Global_Tools
 from nevis.nevis_networks import NevisEnsembleNetwork
@@ -37,8 +38,10 @@ with model:
         compile_design=True,
         t_pstc=t_pstc,
         tau_rc=tau_rc,
-        function=target_function
+        function=target_function,
+        radius = 1
     )
+
     nengo.Connection(input_node, fpga_ens.input)
     
     """

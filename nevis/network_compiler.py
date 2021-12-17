@@ -155,11 +155,17 @@ class NevisCompiler:
         conn_args["t_pstc"]     = conn_args["t_pstc"] / self.sim_args["dt"]
         conn_args["pstc_scale"] = 1.0 - math.exp(-1.0 / conn_args["t_pstc"])
 
+        pre_obj = conn_obj.pre_obj
+        if type(pre_obj) == nengo.Ensemble:
+            conn_args["pre_radius"] = pre_obj.radius
+        else:
+            conn_args["pre_radius"] = 1
+
         # Compile an output node (Nevis - Synapses)
         output_hardware = Synapses(
             pstc_scale      = conn_args["pstc_scale"],
             decoders_list   = conn_args["weights"], 
-            radius_pre      = 8,
+            radius_pre      = conn_args["pre_radius"],
             n_activ_extra   = self.comp_args["n_activ_extra"],
             n_output        = self.comp_args["n_connection_output"],
             radix_w         = self.comp_args["radix_weights"],
@@ -188,12 +194,12 @@ class NevisCompiler:
         #l = dir(network.connections[1])
         
         output_hardware = self.generate_nevis_connection(
-            conn_obj    = network.connections[0],
+            conn_obj    = network.connections[1],
             conn_params = model.params[network.connection],
             pre_index   = 0,
             post_index  = 1
         )
-        
+
         # Save the compiled models's parameters in a JSON file
         # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
