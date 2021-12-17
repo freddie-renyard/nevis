@@ -74,9 +74,6 @@ class NevisCompiler:
 
         param_class = type(param_model.params[model.connections[1]])
         adj_mat_params = adj_mat_params.astype(param_class)
-        
-        #print(model.connections)
-        #print(param_model.params[model.ensembles[0]])
 
         # A note on convention: the first index of the 
         # adjacency matrix refers to the 'source' object 
@@ -116,26 +113,33 @@ class NevisCompiler:
         )
 
         nevis_top = open("nevis/sv_source/nevis_top.sv").read()
-        comp_ensembles = []
-        comp_connections = []
+
+        comp_objs = []
+
+        comp_inter_conns = []
         
         for i, vertex in enumerate(obj_lst_obj):
                 
             if type(vertex) == nengo.Node:
-                
-                source_conns = adj_mat_obj[i][np.nonzero(adj_mat_obj[i])]
-                if len(source_conns) == 0:
-                    # The node is a sink node
-                    print()
+            
+                conns = adj_mat_obj[i][np.nonzero(adj_mat_visual[i])]
+
+                if len(conns) != 0:
+                    # The node is a source node - wait until after
+                    # ensemble compilation to compile the data transfer
+                    # hardware.
+                    comp_objs.append("Source_node")
                 else:
-                    # The node is a source node
-                    for connection in source_conns:
-                        print(connection)
+                    comp_objs.append("Sink_node")
 
             elif type(vertex) == nengo.Ensemble:
                 
                 # Count the number of inputs to the ensemble
                 input_num = np.count_nonzero(adj_mat_obj[i])
+
+                # The way that the Verilog interprets the connection
+                # parameter files needs to be changed to:
+                # weights_<preobj>C<postobj>_<dimension>
 
                 # Generate the ensemble and add it's parameter 
                 # declarations to the nevis_top file.
@@ -147,18 +151,48 @@ class NevisCompiler:
                 )
                 nevis_top += ensemble.verilog_wire_declaration()
 
-                comp_ensembles.append(ensemble)
+                comp_objs.append(ensemble)
+                
+                conn_indices = np.nonzero(adj_mat_visual[i])[0]
+                output_conns = adj_mat_obj[i][conn_indices]
+                output_conn_params = adj_mat_params[i][conn_indices]
+                
+                for conn_data in zip(output_conns, output_conn_params, conn_indices):
+                    connection = self.generate_nevis_connection(
+                        conn_obj    = conn_data[0],
+                        conn_params = conn_data[1],
+                        pre_index   = i,
+                        post_index  = conn_data[2]
+                    )
+                    nevis_top += connection.verilog_wire_declaration()
+
+                    comp_inter_conns.append(connection)
             else:
+                print("ERROR")
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
 
-        # Declare all the ensembles.
-        for ens in comp_ensembles:
-            nevis_top += ens.verilog_mod_declaration()
+        # Loop over the source nodes.
+        for i, obj in enumerate(comp_objs):
+            if obj == "Source_node":
+                ens_indices = np.nonzero(adj_mat_visual[i])[0]
+
+                # Extract the relevant data for the FPGA's UART rx hardware.
+                for index in ens_indices:
+                    ens = comp_objs[index]
+                    print("Ensemble {} dimensions: {}".format(index, ens.input_dims))
+                    print("Ensemble {} input number: {}".format(index, ens.input_num))
+
+            else: break
+
+        # Declare all the ensemble modules.
+        for ens in comp_objs:
+            if type(ens) == Encoder:
+                nevis_top += ens.verilog_mod_declaration()
 
         # End the SystemVerilog module.
         nevis_top += "endmodule"
         print(nevis_top)
-        
+
         #plt.matshow(adj_mat_visual)
         #plt.show()
         exit()
