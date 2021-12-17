@@ -1,8 +1,11 @@
 import nengo
 import math
 import logging
+
+from nengo.ensemble import Ensemble
 from nevis.neuron_classes import Synapses, Encoder
 from nevis.config_tools import ConfigTools
+from nevis.filetools import Filetools
 import numpy as np
 import nengo
 from matplotlib import pyplot as plt
@@ -34,6 +37,10 @@ class NevisCompiler:
     def compile_network(self, model):
         """Builds a model into a NeVIS network representation, ready for synthesis.
         """
+
+        # Purge previous build caches 
+        ConfigTools.purge_model_config()
+        Filetools.purge_directory("nevis/file_cache")
 
         # Build the model, to allow for parameter exrtraction.
         param_model = nengo.builder.Model()
@@ -96,8 +103,41 @@ class NevisCompiler:
         #   objects, but pass in some connection based parameters from 
         #   outside.
 
+        # Compile the parameters first, then compile the modules.
+        # This will make absolutely sure that Verilog does not infer 
+        # signals if this is not desired.
+
+        for i, vertex in enumerate(obj_lst_obj):
+                
+            if type(vertex) == nengo.Node:
+                
+                source_conns = adj_mat_obj[i][np.nonzero(adj_mat_obj[i])]
+                if len(source_conns) == 0:
+                    # The node is a sink node
+                    print()
+                else:
+                    # The node is a source node
+                    for connection in source_conns:
+                        print(connection)
+
+            elif type(vertex) == nengo.Ensemble:
+                
+                # Count the number of inputs to the ensemble
+                input_num = np.count_nonzero(adj_mat_obj[i])
+
+                self.generate_nevis_ensemble(
+                    ens_obj     = vertex, 
+                    ens_params  = obj_lst_params[i], 
+                    index       = i, 
+                    input_num   = input_num
+                )
+
+            else:
+                logger.error("[NeVIS]: Only node and ensemble objects are supported.")
+
         #plt.matshow(adj_mat_visual)
         #plt.show()
+        exit()
 
         print()
 

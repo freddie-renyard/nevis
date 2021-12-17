@@ -42,7 +42,7 @@ with model:
     nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
     nengo.Connection(b, output_node_2, synapse=t_pstc, function=target_function)
 
-    NevisCompiler.compile_network(model)
+NevisCompiler().compile_network(model)
 
 import nengo_gui
 nengo_gui.GUI(__file__).start()
