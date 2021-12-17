@@ -121,7 +121,7 @@ class Compiler:
         return compiled_str, total_bit_depth
 
     @classmethod
-    def compile_to_float(cls, target_list, radix_mantissa, exp_limit, force_exp_depth=None, verbose=False):
+    def compile_to_float(cls, target_list, radix_mantissa, force_exp_depth=None, verbose=False):
         """ This method compiles parameters to the proprietary floating point architecture
         specified in the encoder.
 
@@ -133,9 +133,6 @@ class Compiler:
             The desired radix of the mantissa.
         force_exp_depth : 
             The desired depth of the exponent, for compiling multidimensional decoders.
-        exp_limit
-            The maximum magnitude of the exponent. Used to prevent the compiler from compiling
-            extremely low values e.g. 1.0x2^-53. Default = 0 (no limit)
         verbose: bool
             Whether to output a detailed output of the process to the terminal.
         """

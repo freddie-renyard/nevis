@@ -89,9 +89,10 @@ class Encoder:
         self.n_x = n_x
         self.radix_x = radix_x
 
-        self.n_neurons = n_neurons
+        # Number of neurons that the ensemble represents.
+        self.n_neurons = np.shape(encoder_list)[0]
 
-        # Input vecotr dimensions.
+        # Input vector dimensions.
         self.input_dims = np.shape(encoder_list)[-1]
         
         # Number of inputs (Fan-in)
@@ -126,9 +127,8 @@ class Encoder:
         self.n_dv_post = n_dv_post
 
         # Compile the gain and bias into seperate lists.
-        exp_limit = 15
-        self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, exp_limit, verbose=verbose)
-        self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, exp_limit, verbose=verbose)
+        self.comp_gain_list, self.n_g_mantissa, self.n_g_exponent = Compiler.compile_to_float(self.eg_trc_list, self.radix_g_mantissa, verbose=verbose)
+        self.comp_bias_list, self.n_b_mantissa, self.n_b_exponent = Compiler.compile_to_float(self.b_trc_list, self.radix_b_mantissa, verbose=verbose)
 
         self.save_params(index, floating=True)
 
@@ -309,6 +309,8 @@ class Synapses:
 
         decoders_list = decoders_list * 1
         self.output_dims = np.shape(decoders_list)[0]
+
+        self.n_neurons_pre = np.shape(decoders_list)[1]
         
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
@@ -329,8 +331,6 @@ class Synapses:
         # Calculate the number of bits to shift by to implement the post_synaptic filter.
         n_value = 1 / pstc_scale
         self.pstc_shift = int(math.log2(n_value))
-        
-        self.n_neurons_pre = n_neurons
 
         # Multiply weights by scale factor
         scale_factor_w = 2 ** self.scale_w
@@ -352,12 +352,11 @@ class Synapses:
             if new_exp > highest_exp:
                 highest_exp = new_exp
 
-        exp_limit = 1000
         self.comp_weights_list = []
         self.n_w_man = None
         self.n_w_exp = None
         for i, weight_list in enumerate(self.weights):
-            comp_weights, n_w_man, n_w_exp = Compiler.compile_to_float(weight_list, self.radix_w, exp_limit, highest_exp, verbose=verbose)
+            comp_weights, n_w_man, n_w_exp = Compiler.compile_to_float(weight_list, self.radix_w, highest_exp, verbose=verbose)
             logger.info("Weights {}".format(i+1))
             logger.info("{} {}".format(n_w_man, n_w_exp))
             self.comp_weights_list.append(comp_weights)
