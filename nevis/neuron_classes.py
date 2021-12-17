@@ -129,14 +129,14 @@ class Encoder:
 
         self.save_params(index, floating=True)
 
-    def compile_nau_start_params(self, n_activ, n_neuron, n_ref): 
+    def compile_nau_start_params(self, n_voltage, n_neuron, n_ref): 
         """ Compiles the start file for the NAU.
         These will start at zero by default, and are also concatenated
         with the refractory period for each neuron.
 
         Parameters
         ----------
-        n_activ: int
+        n_voltage: int
             The bit depth of the activation datapath.
         n_neuron: int
             The number of neurons in the module.
@@ -154,7 +154,7 @@ class Encoder:
         target_list = []
 
         for i in range(n_neuron):
-            target_list.append((n_activ) * "0")
+            target_list.append((n_voltage) * "0")
 
         for i in range(n_neuron):
             target_list[i] = target_list[i] + (n_ref * "1")
@@ -212,7 +212,7 @@ class Encoder:
         # Save the NAU start params
         filename = "nau_compiled" + index + ".mem"
         logger.info("INFO: Saving NAU start parameters to binary .mem file as %s", filename)
-        combined = self.compile_nau_start_params(n_activ=self.n_dv_post, n_ref=self.n_r, n_neuron=self.n_neurons)
+        combined = self.compile_nau_start_params(n_voltage=self.n_dv_post, n_ref=self.n_r, n_neuron=self.n_neurons)
         running_mem_total = Filetools.save_to_file(
             filename, 
             combined,
@@ -312,16 +312,11 @@ class Synapses:
             for i, weight_list in enumerate(decoders_list):
                 decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
 
-        scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
+        self.scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
         
         self.radix_w = radix_w
-        self.scale_w = scale_w
         self.n_output = n_output
-
-        # This value is usually compiled in the Verilog, but is needed to compile
-        # the starting memory files.
         self.n_activ_extra = n_activ_extra
-        self.n_activ = 1 + self.radix_w + self.scale_w + n_activ_extra
         
         # Calculate the number of bits to shift by to implement the post_synaptic filter.
         n_value = 1 / pstc_scale
@@ -332,11 +327,6 @@ class Synapses:
         logger.info(decoders_list)
         self.weights = decoders_list * scale_factor_w
         logger.info(self.weights)
-        
-        self.comp_activation = []
-        self.comp_trait_bits = []
-        for _ in range(self.output_dims):
-            self.comp_activation.append(self.compile_activations(n_activ=self.n_activ, n_neuron=1))
 
          # Compile the weights
         highest_exp = 0
@@ -365,47 +355,18 @@ class Synapses:
             self.n_w_man, self.n_w_exp = n_w_man, n_w_exp
 
         self.save_params(pre_index, post_start_index, floating=True)
-    
-    def compile_activations(self, n_activ, n_neuron): 
-        """ Compiles the start file for the synaptic activations.
-        These will start at zero by default, and are also concatenated
-        with the refractory period for each neuron.
-
-        Parameters
-        ----------
-        n_activ: int
-            The bit depth of the activation datapath.
-        n_neuron: int
-            The number of neurons in the module.
-
-        Returns
-        -------
-        target_list: [str]
-            The start parameters as a list of strings, prepared for output
-            into a memory file.
-        
-        """
-        target_list = []
-        for i in range(n_neuron):
-            target_list.append((n_activ) * "0")
-
-        return target_list
 
     def save_params(self, pre_index, post_start_index, floating=True, running_mem_total=0):
         
         index = str(pre_index) + "C"
 
-        for i, compiled_lists in enumerate(zip(self.comp_weights_list, self.comp_activation)):
+        # Save each decoder's compiled weight list to a .mem file.
+        for i, compiled_lists in enumerate(self.comp_weights_list):
 
-            names = [
-                "weights_compiled",
-                "activations_compiled"
-            ]
-
-            for param_pair in zip(compiled_lists, names):
-                running_mem_total = Filetools.save_to_file(
-                param_pair[1] + index + str(post_start_index+i) + ".mem", 
-                param_pair[0],
+            filename = "weights_compiled" + index + str(post_start_index+i) + ".mem"
+            running_mem_total = Filetools.save_to_file(
+                filename, 
+                compiled_lists,
                 running_mem_total
             )
 
