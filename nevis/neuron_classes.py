@@ -1,3 +1,4 @@
+from numpy.core.fromnumeric import nonzero
 from nevis.memory_compiler import Compiler
 import math
 import numpy as np
@@ -94,6 +95,9 @@ class Encoder:
         
         # Number of inputs (Fan-in)
         self.input_num = input_num
+
+        # The index of this node in the context of the whole graph
+        self.index = index
 
         if self.input_dims == 1:
             # Multiply the gains by their respective encoder values and divide by RC constant.
@@ -269,6 +273,16 @@ class Encoder:
 
         return running_mem_total
 
+    def verilog_wire_declaration(self):    
+        
+        output_str = open("sv_source/ensemble_wires.sv").read()
+        return output_str.replace("<i>", str(self.index))
+
+    def verilog_mod_declaration(self):
+
+        output_str = open("sv_source/ensemble_mod.sv").read()
+        return output_str.replace("<i>", str(self.index))
+        
 class Synapses:
 
     def __init__(self, 
@@ -315,6 +329,9 @@ class Synapses:
         self.output_dims = np.shape(decoders_list)[0]
 
         self.n_neurons_pre = np.shape(decoders_list)[1]
+
+        self.pre_index = pre_index
+        self.post_index = post_start_index
         
         # Clip small values to reduce dynamic range and hence decrease required exponent bit depth.
         if minimum_val != 0:
@@ -406,6 +423,12 @@ class Synapses:
         verilog_header.close()
 
         return running_mem_total
+    
+    def verilog_wire_declaration(self):    
+        
+        output_str = open("sv_source/connection_wires.sv").read()
+        output_str = output_str.replace("<i_pre>", str(self.pre_index))
+        return output_str.replace("<i_post>", str(self.post_index))
 
     def calculate_scale_w(self, target_list):
 

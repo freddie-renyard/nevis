@@ -107,6 +107,10 @@ class NevisCompiler:
         # This will make absolutely sure that Verilog does not infer 
         # signals if this is not desired.
 
+        nevis_top = open("sv_source/nevis_top.sv").read()
+        comp_ensembles = []
+        comp_connections = []
+        
         for i, vertex in enumerate(obj_lst_obj):
                 
             if type(vertex) == nengo.Node:
@@ -125,21 +129,31 @@ class NevisCompiler:
                 # Count the number of inputs to the ensemble
                 input_num = np.count_nonzero(adj_mat_obj[i])
 
-                self.generate_nevis_ensemble(
+                # Generate the ensemble and add it's parameter 
+                # declarations to the nevis_top file.
+                ensemble = self.generate_nevis_ensemble(
                     ens_obj     = vertex, 
                     ens_params  = obj_lst_params[i], 
                     index       = i, 
                     input_num   = input_num
                 )
+                nevis_top += ensemble.verilog_wire_declaration()
 
+                comp_ensembles.append(ensemble)
             else:
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
 
+        # Declare all the ensembles.
+        for ens in comp_ensembles:
+            nevis_top += ens.verilog_mod_declaration()
+
+        # End the SystemVerilog module.
+        nevis_top += "endmodule"
+        print(nevis_top)
+        
         #plt.matshow(adj_mat_visual)
         #plt.show()
         exit()
-
-        print()
 
     def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num):
         """This method inputs a Nengo ensemble (both object and built obj if needed)
