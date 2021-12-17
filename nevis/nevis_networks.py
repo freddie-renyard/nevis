@@ -148,7 +148,7 @@ class NevisEnsembleNetwork(nengo.Network):
                 eval_points = eval_points,
                 label       = " ",
                 seed        = self.seed,
-                radius      = 1
+                radius      = 8
             )
             nengo.Connection(self.input, self.ensemble, synapse=t_pstc)
             

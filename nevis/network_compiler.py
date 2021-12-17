@@ -159,6 +159,7 @@ class NevisCompiler:
         output_hardware = Synapses(
             pstc_scale      = conn_args["pstc_scale"],
             decoders_list   = conn_args["weights"], 
+            radius_pre      = 8,
             n_activ_extra   = self.comp_args["n_activ_extra"],
             n_output        = self.comp_args["n_connection_output"],
             radix_w         = self.comp_args["radix_weights"],

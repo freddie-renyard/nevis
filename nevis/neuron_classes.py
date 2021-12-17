@@ -271,7 +271,13 @@ class Encoder:
 
 class Synapses:
 
-    def __init__(self, pstc_scale, decoders_list, n_activ_extra, n_output, radix_w, minimum_val, pre_index, post_start_index, verbose=False):
+    def __init__(self, 
+        pstc_scale, 
+        decoders_list, radius_pre,
+        n_activ_extra, n_output, radix_w, 
+        minimum_val, 
+        pre_index, post_start_index, 
+        verbose=False):
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
@@ -285,6 +291,9 @@ class Synapses:
             method will round to the nearest 2^n, producing suboptimal results.
         decoders_list: Ndarray, shape=(dimensions, decoders)
             The decoder parameters of the Nengo model.
+        radius_pre: int or float
+            The radius of the ensemble which feeds spikes to this decoder. This allows
+            for prevention of overflow. 
         encoders_list: [Any]
             The encoder parameters of the Nengo model.
         n_activ_extra: int
@@ -313,6 +322,10 @@ class Synapses:
                 decoders_list[i] = [Compiler.clip_value(x, minimum_val) for x in weight_list]
 
         self.scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
+
+        extra_bits = math.ceil(math.log2(radius_pre)) - 1
+        if extra_bits < 0: extra_bits = 0
+        self.scale_w += extra_bits
         
         self.radix_w = radix_w
         self.n_output = n_output
