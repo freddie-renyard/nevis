@@ -470,9 +470,38 @@ class OutputNode:
 
 class DirectConnection:
 
-    def __init__(self, dims):
+    def __init__(self, dims, pre_index, post_index):
 
         self.dims = dims
+        self.pre_index = pre_index
+        self.post_index = post_index
+
+        self.save_params()
+
+    # TODO Give connections class inheritance to prevent code duplication.
+    def save_params(self, running_mem_total=0):
+        
+        index = str(self.pre_index) + "C"
+
+        index += str(self.post_index)
+
+        # Write all relevant params for this portion of the network to the Verilog header file.
+        verilog_header = open("nevis/file_cache/model_params.vh", "a")
+
+        verilog_header.write(("// Connection " + index + ' Params' + '\n'))
+        verilog_header.write(('parameter ' + 'N_OUTPUT_' + index + ' = ' + str(1) + ',' + '\n'))
+        verilog_header.write(('OUTPUT_DIMS_' + index + ' = ' + str(self.dims) + ';' + '\n'))
+
+        verilog_header.write('\n')
+        verilog_header.close()
+
+        return running_mem_total
+    
+    def verilog_wire_declaration(self):    
+        
+        output_str = open("nevis/sv_source/connection_wires.sv").read()
+        output_str = output_str.replace("<i_pre>", str(self.pre_index))
+        return output_str.replace("<i_post>", str(self.post_index))
         
 class UART:
 

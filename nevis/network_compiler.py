@@ -144,9 +144,12 @@ class NevisCompiler:
                     for node_data in zip(conns,conn_indices):
 
                         source_conn = DirectConnection(
-                            dims = node_data[0].pre_obj.size_out
+                            dims = node_data[0].pre_obj.size_out,
+                            pre_index = i,
+                            post_index = node_data[1]
                         )
-
+                        nevis_top += source_conn.verilog_wire_declaration()
+                        
                         adj_mat_nevis[i][node_data[1]] = source_conn
 
                 else:
