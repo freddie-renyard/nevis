@@ -5,6 +5,7 @@ import numpy as np
 import logging
 
 from nevis.filetools import Filetools
+from nevis.config_tools import ConfigTools
 """
 This file contains the classes for the compiled sections of different parts of the network.
 TODO Convert the fixed/floating distiction into subclasses of a main Encoder class etc.
@@ -459,8 +460,11 @@ class InputNode:
 
 class OutputNode:
 
-    def __init__(self):
-        pass
+    def __init__(self, dims, index):
+        self.dims = dims
+        self.index = index
+
+        self.pre_objs = []
 
 class DirectConnection:
 
@@ -480,6 +484,10 @@ class UART:
         self.n_output_data = int(n_output_data)
         self.baud = baud
 
+        self.in_node_dimensionalites = []
+        
+        self.out_nodes = []
+
         self.save_params()
 
     def save_params(self):
@@ -487,5 +495,43 @@ class UART:
         with open("nevis/file_cache/model_params.vh", "a") as verilog_header:
             verilog_header.write("// UART parameters")
             verilog_header.write("parameter N_RX = " + str(self.n_input_data) + ",\n")
-            verilog_header.write("N_TX = " + str(self.n_output_data) + ";\n")
+            verilog_header.write("N_TX = " + str(self.n_output_data) + ",\n")
+            verilog_header.write("TX_NUM_OUTS = " + str(len(self.out_nodes)) + ",\n")
+            #verilog_header.write("N_UART_TX = " + str(self.))
             verilog_header.write("BAUD_RATE = " + str(self.baud) + ";\n\n")
+
+    def verilog_create_uart(self):
+
+        verilog_out = open('nevis/sv_source/uart_wires_mod.sv').read()
+
+        # Add the output assignments
+        tx_assignment = open('nevis/sv_source/uart_tx_ins.sv').read()
+        
+        bit_pointer = 0
+        for out_node in self.out_nodes:
+            for obj in out_node.pre_objs:
+                for dim in range(out_node.dims):
+                    assign = tx_assignment.replace("<i_pre>", str(obj))
+                    assign = assign.replace("<i_post>", str(out_node.index))
+                    assign = assign.replace("<i_dim>", str(dim))
+
+                    assign = assign.replace("<bit_pre>", str(bit_pointer))
+                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_output_data))
+
+                    verilog_out = verilog_out.replace("<tx-flag>", assign)
+
+                    bit_pointer += self.n_output_data
+
+        verilog_out = verilog_out.replace("<tx-flag>", "\n")
+
+        print(verilog_out)
+        exit()
+
+        ConfigTools.create_model_config_file(
+            in_node_depth = self.n_input_data,
+            out_node_depth=self.n_output_data,
+            out_node_scale=self.n_output_data - 4,
+            n_input_values=sum(self.in_node_dimensionalites),
+            n_output_values=sum(0)
+        )
+

@@ -130,6 +130,7 @@ class NevisCompiler:
                     source_node = InputNode(
                         dims = vertex.size_out
                     )
+                    uart_obj.in_node_dimensionalites.append(vertex.size_out)
 
                     obj_lst_nevis.append(source_node)
 
@@ -146,7 +147,19 @@ class NevisCompiler:
                         adj_mat_nevis[i][node_data[1]] = source_conn
 
                 else:
-                    sink_node = OutputNode()
+                    sink_node = OutputNode(
+                        dims = vertex.size_out,
+                        index = i
+                    )
+                
+                    pre_obj = np.nonzero(adj_mat_visual[:,i])[0]
+
+                    if len(pre_obj) != 1:
+                        print("ERROR: output nodes must only connect from one ensemble to one output node.")
+
+                    sink_node.pre_objs.append(pre_obj[0])
+                    uart_obj.out_nodes.append(sink_node)
+
                     obj_lst_nevis.append(sink_node)
 
             elif type(vertex) == nengo.Ensemble:
@@ -189,18 +202,7 @@ class NevisCompiler:
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
 
         # CREATE THE UART OBJECT AND INSTANTIATE IT IN THE VERILOG.
-
-        # Loop over the source nodes.
-        for i, obj in enumerate(obj_lst_nevis):
-            if obj == "Source_node":
-                ens_indices = np.nonzero(adj_mat_visual[i])[0]
-
-                # Extract the relevant data for the FPGA's UART rx hardware.
-                for index in ens_indices:
-                    ens = obj_lst_nevis[index]
-                    print("Ensemble {} dimensions: {}".format(index, ens.input_dims))
-                    print("Ensemble {} input number: {}".format(index, ens.input_num))
-            else: break
+        uart_obj.verilog_create_uart()
 
         # CREATE THE ENSEMBLE OBJECTS AND COMPILE THEIR CONNECTIONS.
 
@@ -216,6 +218,8 @@ class NevisCompiler:
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices
                 )
+
+        exit()
 
         print(obj_lst_nevis)
         print(adj_mat_nevis)
