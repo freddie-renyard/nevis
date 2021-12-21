@@ -1,4 +1,4 @@
-    /**************** ENSEMBLE <i> MODULE *************/
+    /************* ENSEMBLE <i> MODULE ************/
     ensemble_top #(
             .N_X(N_X_<i>),
             .RADIX_X(RADIX_X_<i>),

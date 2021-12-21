@@ -3,6 +3,7 @@ import math
 import logging
 
 from nengo.ensemble import Ensemble
+from numpy.lib.utils import source
 from nevis.neuron_classes import Synapses, Encoder
 from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
@@ -11,6 +12,7 @@ import nengo
 from matplotlib import pyplot as plt
 
 from nevis.neuron_classes import UART
+from nevis.neuron_classes import InputNode, OutputNode, DirectConnection
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +70,11 @@ class NevisCompiler:
         # the list created above. These contain the Connections
         # and BuiltConnections.
         node_num = len(obj_lst_obj)
-        adj_mat_obj = adj_mat_params = adj_mat_visual = np.zeros([node_num, node_num])
-        
+        adj_mat_obj = adj_mat_params = adj_mat_visual  = np.zeros([node_num, node_num])
+
+        # Declared seperately as numpy lists cannot be heterogenous.
+        adj_mat_nevis = [[0.0 for _ in range(node_num)] for _ in range(node_num)]
+
         adj_mat_obj = adj_mat_obj.astype(nengo.Connection)
 
         param_class = type(param_model.params[model.connections[1]])
@@ -92,15 +97,11 @@ class NevisCompiler:
                             adj_mat_visual[i][j] = 1
         
         # High level overview:
-        # 1. Begin iterating through the source objects.
-        # 2. Generate the source object.
-        # 3. Add its Verilog template to the open nevis_top.sv file
-        # 4. Iterate over its connections.
-        # 5. Generate the connection object.
-        # 6. Add its Verilog template to the open nevis_top.sv file
-        # A note on compiling Verilog: have the scripts inside the 
-        #   objects, but pass in some connection based parameters from 
-        #   outside.
+        # 1. Begin iterating through the objects.
+        # 2. Generate the objects.
+        # 3. If ensemble, add it's Verilog wires to the top file.
+        # 4. Generate the connections associated with the outputs 
+        #   from the object.
 
         # Compile the parameters first, then compile the modules.
         # This will make absolutely sure that Verilog does not infer 
@@ -114,9 +115,7 @@ class NevisCompiler:
 
         nevis_top = open("nevis/sv_source/nevis_top.sv").read()
 
-        comp_objs = []
-
-        comp_inter_conns = []
+        obj_lst_nevis = []
         
         for i, vertex in enumerate(obj_lst_obj):
                 
@@ -128,9 +127,27 @@ class NevisCompiler:
                     # The node is a source node - wait until after
                     # ensemble compilation to compile the data transfer
                     # hardware.
-                    comp_objs.append("Source_node")
+                    source_node = InputNode(
+                        dims = vertex.size_out
+                    )
+
+                    obj_lst_nevis.append(source_node)
+
+                    # TODO Combine this with the code below into a function.
+                    conn_indices = np.nonzero(adj_mat_visual[i])[0]
+                    conns = adj_mat_obj[i][conn_indices]
+
+                    for node_data in zip(conns,conn_indices):
+
+                        source_conn = DirectConnection(
+                            dims = node_data[0].pre_obj.size_out
+                        )
+
+                        adj_mat_nevis[i][node_data[1]] = source_conn
+
                 else:
-                    comp_objs.append("Sink_node")
+                    sink_node = OutputNode()
+                    obj_lst_nevis.append(sink_node)
 
             elif type(vertex) == nengo.Ensemble:
                 
@@ -151,7 +168,7 @@ class NevisCompiler:
                 )
                 nevis_top += ensemble.verilog_wire_declaration()
 
-                comp_objs.append(ensemble)
+                obj_lst_nevis.append(ensemble)
                 
                 conn_indices = np.nonzero(adj_mat_visual[i])[0]
                 output_conns = adj_mat_obj[i][conn_indices]
@@ -165,30 +182,44 @@ class NevisCompiler:
                         post_index  = conn_data[2]
                     )
                     nevis_top += connection.verilog_wire_declaration()
+                    adj_mat_nevis[i][int(conn_data[2])] = connection
 
-                    comp_inter_conns.append(connection)
             else:
                 print("ERROR")
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
 
+        # CREATE THE UART OBJECT AND INSTANTIATE IT IN THE VERILOG.
+
         # Loop over the source nodes.
-        for i, obj in enumerate(comp_objs):
+        for i, obj in enumerate(obj_lst_nevis):
             if obj == "Source_node":
                 ens_indices = np.nonzero(adj_mat_visual[i])[0]
 
                 # Extract the relevant data for the FPGA's UART rx hardware.
                 for index in ens_indices:
-                    ens = comp_objs[index]
+                    ens = obj_lst_nevis[index]
                     print("Ensemble {} dimensions: {}".format(index, ens.input_dims))
                     print("Ensemble {} input number: {}".format(index, ens.input_num))
-
             else: break
 
-        # Declare all the ensemble modules.
-        for ens in comp_objs:
+        # CREATE THE ENSEMBLE OBJECTS AND COMPILE THEIR CONNECTIONS.
+
+        for i, ens in enumerate(obj_lst_nevis):
             if type(ens) == Encoder:
+                
+                # Declare the connections.
+                fan_in_indices = np.nonzero(adj_mat_visual[i])[0]
+
+                # Declare the ensemble in the Verilog.
                 nevis_top += ens.verilog_mod_declaration()
 
+                nevis_top += ens.verilog_input_declaration(
+                    post_indices = fan_in_indices
+                )
+
+        print(obj_lst_nevis)
+        print(adj_mat_nevis)
+        print(adj_mat_visual)
         # End the SystemVerilog module.
         nevis_top += "endmodule"
         print(nevis_top)

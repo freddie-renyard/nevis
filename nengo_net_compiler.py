@@ -7,7 +7,7 @@ import numpy as np
 
 # Define the input function to the neural population
 def input_func(t):
-    return 1 #np.sin(t * 2*np.pi)
+    return 1,1 #np.sin(t * 2*np.pi)
 
 def target_function(x):
     return x
@@ -23,7 +23,7 @@ with model:
 
     a = nengo.Ensemble(
         n_neurons=50, 
-        dimensions=1,
+        dimensions=2,
         neuron_type=nengo.neurons.LIF(tau_rc)
     )
     
@@ -34,12 +34,9 @@ with model:
     )
 
     nengo.Connection(stim, a)
-    nengo.Connection(a, a)
-    nengo.Connection(stim, b)
-    output_node = nengo.Node(size_in=1)
+    nengo.Connection(a[0], b)
     output_node_2 = nengo.Node(size_in=1)
     
-    nengo.Connection(a, output_node, synapse=t_pstc, function=target_function)
     nengo.Connection(b, output_node_2, synapse=t_pstc, function=target_function)
 
 NevisCompiler().compile_network(model)

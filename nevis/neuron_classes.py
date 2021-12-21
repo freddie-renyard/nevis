@@ -282,6 +282,15 @@ class Encoder:
 
         output_str = open("nevis/sv_source/ensemble_mod.sv").read()
         return output_str.replace("<i>", str(self.index))
+
+    def verilog_input_declaration(self, post_indices):
+
+        assignment = open("nevis/sv_source/ensemble_ins.sv").read()
+        output_str = ""
+        for i, index in enumerate(post_indices):
+            output_str += assignment.replace("<current_i>", str(i)).replace("<i_pre>", str(index)).replace("<i_post>", str(self.index))
+        output_str += "\n"
+        return output_str
         
 class Synapses:
 
@@ -441,6 +450,23 @@ class Synapses:
             print(max_val)
 
         return scale_val-1
+
+class InputNode:
+
+    def __init__(self, dims):
+        self.dims = dims
+        
+
+class OutputNode:
+
+    def __init__(self):
+        pass
+
+class DirectConnection:
+
+    def __init__(self, dims):
+
+        self.dims = dims
 
 class UART:
 
