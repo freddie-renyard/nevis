@@ -127,16 +127,19 @@ class NevisCompiler:
                     # The node is a source node - wait until after
                     # ensemble compilation to compile the data transfer
                     # hardware.
-                    source_node = InputNode(
-                        dims = vertex.size_out
-                    )
-                    uart_obj.in_node_dimensionalites.append(vertex.size_out)
-
-                    obj_lst_nevis.append(source_node)
 
                     # TODO Combine this with the code below into a function.
                     conn_indices = np.nonzero(adj_mat_visual[i])[0]
                     conns = adj_mat_obj[i][conn_indices]
+
+                    source_node = InputNode(
+                        dims = vertex.size_out,
+                        index = i,
+                        post_objs = conn_indices
+                    )
+
+                    uart_obj.in_nodes.append(source_node)
+                    obj_lst_nevis.append(source_node)
 
                     for node_data in zip(conns,conn_indices):
 
@@ -202,7 +205,7 @@ class NevisCompiler:
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
 
         # CREATE THE UART OBJECT AND INSTANTIATE IT IN THE VERILOG.
-        uart_obj.verilog_create_uart()
+        nevis_top += uart_obj.verilog_create_uart()
 
         # CREATE THE ENSEMBLE OBJECTS AND COMPILE THEIR CONNECTIONS.
 
@@ -218,8 +221,6 @@ class NevisCompiler:
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices
                 )
-
-        exit()
 
         print(obj_lst_nevis)
         print(adj_mat_nevis)

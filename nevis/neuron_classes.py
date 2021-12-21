@@ -454,10 +454,12 @@ class Synapses:
 
 class InputNode:
 
-    def __init__(self, dims):
+    def __init__(self, dims, index, post_objs):
         self.dims = dims
-        
+        self.index = index
 
+        self.post_objs = post_objs
+        
 class OutputNode:
 
     def __init__(self, dims, index):
@@ -471,7 +473,7 @@ class DirectConnection:
     def __init__(self, dims):
 
         self.dims = dims
-
+        
 class UART:
 
     def __init__(self, baud, n_input_data, n_output_data):
@@ -487,6 +489,7 @@ class UART:
         self.in_node_dimensionalites = []
         
         self.out_nodes = []
+        self.in_nodes = []
 
         self.save_params()
 
@@ -497,14 +500,14 @@ class UART:
             verilog_header.write("parameter N_RX = " + str(self.n_input_data) + ",\n")
             verilog_header.write("N_TX = " + str(self.n_output_data) + ",\n")
             verilog_header.write("TX_NUM_OUTS = " + str(len(self.out_nodes)) + ",\n")
-            #verilog_header.write("N_UART_TX = " + str(self.))
+            verilog_header.write("RX_NUM_INS = " + str(len(self.in_nodes)) + ",\n")
             verilog_header.write("BAUD_RATE = " + str(self.baud) + ";\n\n")
 
     def verilog_create_uart(self):
 
         verilog_out = open('nevis/sv_source/uart_wires_mod.sv').read()
 
-        # Add the output assignments
+        # Add the output (TX) assignments
         tx_assignment = open('nevis/sv_source/uart_tx_ins.sv').read()
         
         bit_pointer = 0
@@ -521,17 +524,45 @@ class UART:
                     verilog_out = verilog_out.replace("<tx-flag>", assign)
 
                     bit_pointer += self.n_output_data
+        
+        output_num = bit_pointer % self.n_output_data
 
         verilog_out = verilog_out.replace("<tx-flag>", "\n")
 
-        print(verilog_out)
-        exit()
+        # Add the input (RX) assigments
+        rx_assignment = open('nevis/sv_source/uart_rx_ins.sv').read()
+        
+        # TODO The code below will not work with part-selected inputs as 
+        # the code assumes consistent dimensionality between input connections.
+        # Add this functionality by passing connection dimensionality data to
+        # the input node.
+        bit_pointer = 0
+        for in_node in self.in_nodes:
+            for post_index in in_node.post_objs:
+                # The following assumes constant connection dimensionality
+                for dim in range(in_node.dims):
+                    assign = rx_assignment.replace("<i_pre>", str(in_node.index))
+                    assign = assign.replace("<i_post>", str(post_index))
+                    assign = assign.replace("<i_dim>", str(dim))
+
+                    assign = assign.replace("<bit_pre>", str(bit_pointer))
+                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_output_data))
+
+                    verilog_out = verilog_out.replace("<rx-flag>", assign)
+
+                    bit_pointer += self.n_output_data
+
+        input_num = bit_pointer % self.n_input_data
+
+        verilog_out = verilog_out.replace("<rx-flag>", "")
 
         ConfigTools.create_model_config_file(
             in_node_depth = self.n_input_data,
             out_node_depth=self.n_output_data,
             out_node_scale=self.n_output_data - 4,
-            n_input_values=sum(self.in_node_dimensionalites),
-            n_output_values=sum(0)
+            n_input_values=input_num,
+            n_output_values=output_num
         )
+
+        return verilog_out
 
