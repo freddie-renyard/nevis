@@ -22,9 +22,10 @@
         .o_fifo_rd_en(i_rd_en_<i_pre>),
         
         .i_prev_idle(o_idle_<i_pre>),
-        .o_activate_encoder(activate_encoder_<i_post>),
+        .o_activate_encoder(activate_encoder_<i_pre>C<i_post>),
         
         .o_output_bus(o_d_conn_<i_pre>C<i_post>),
         .o_output_valid(o_d_valid_conn_<i_pre>C<i_post>),
         .o_idle()
     );
+

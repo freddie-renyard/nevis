@@ -21,7 +21,7 @@
         ) ensemble_0 (
             .clk(clk),
             .rst(rst),
-            .global_pulse(global_pulse),
+            .global_pulse(<pulse>),
             
             .i_x(i_d_ensemble_<i>),
             .o_idle(o_idle_<i>),

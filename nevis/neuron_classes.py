@@ -279,9 +279,13 @@ class Encoder:
         output_str = open("nevis/sv_source/ensemble_wires.sv").read()
         return output_str.replace("<i>", str(self.index))
 
-    def verilog_mod_declaration(self):
+    def verilog_mod_declaration(self, is_first):
 
         output_str = open("nevis/sv_source/ensemble_mod.sv").read()
+        if is_first:
+            output_str = output_str.replace("<pulse>", "global_pulse")
+        else:
+            output_str = output_str.replace("<pulse>", ("activate_encoder_" + str(self.index)))
         return output_str.replace("<i>", str(self.index))
 
     def verilog_input_declaration(self, post_indices):
@@ -402,8 +406,11 @@ class Synapses:
 
         # Save each decoder's compiled weight list to a .mem file.
         for i, compiled_lists in enumerate(self.comp_weights_list):
-
-            filename = "weights_compiled" + index + str(post_start_index+i) + ".mem"
+            
+            # The syntax of this file format is the file name suffixed by 'nCmDw' where n is the 
+            # index of the object which is the source of the connection, m is the index of the sink
+            # object of the connection, and w is the dimension which is beign compiled.
+            filename = "weights_compiled" + index + str(post_start_index) + "D" + str(i) + ".mem"
             running_mem_total = Filetools.save_to_file(
                 filename, 
                 compiled_lists,
@@ -437,6 +444,12 @@ class Synapses:
     def verilog_wire_declaration(self):    
         
         output_str = open("nevis/sv_source/connection_wires.sv").read()
+        output_str = output_str.replace("<i_pre>", str(self.pre_index))
+        return output_str.replace("<i_post>", str(self.post_index))
+
+    def verilog_mod_declaration(self):
+
+        output_str = open("nevis/sv_source/connection_mod.sv").read()
         output_str = output_str.replace("<i_pre>", str(self.pre_index))
         return output_str.replace("<i_post>", str(self.post_index))
 

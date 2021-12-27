@@ -149,7 +149,7 @@ class NevisCompiler:
                             post_index = node_data[1]
                         )
                         nevis_top += source_conn.verilog_wire_declaration()
-                        
+
                         adj_mat_nevis[i][node_data[1]] = source_conn
 
                 else:
@@ -172,10 +172,6 @@ class NevisCompiler:
                 
                 # Count the number of inputs to the ensemble
                 input_num = np.count_nonzero(adj_mat_obj[i])
-
-                # The way that the Verilog interprets the connection
-                # parameter files needs to be changed to:
-                # weights_<preobj>C<postobj>_<dimension>
 
                 # Generate the ensemble and add it's parameter 
                 # declarations to the nevis_top file.
@@ -216,14 +212,28 @@ class NevisCompiler:
             if type(ens) == Encoder:
                 
                 # Declare the connections.
-                fan_in_indices = np.nonzero(adj_mat_visual[i])[0]
+                fan_in_indices = np.nonzero(adj_mat_visual[:,i])[0]
+
+                # Determine whether all of the fan-in connections to this
+                # ensemble are InputNodes, if not ensure that the ensemble
+                # verilog compiler compiles the correct pulse signal for 
+                # triggering the module.
+                is_first = True
+                for index in fan_in_indices:
+                    if type(obj_lst_nevis[index]) != InputNode:
+                        is_first = False
+                        break
 
                 # Declare the ensemble in the Verilog.
-                nevis_top += ens.verilog_mod_declaration()
+                nevis_top += ens.verilog_mod_declaration(is_first=is_first)
 
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices
                 )
+
+                for conn_obj in adj_mat_nevis[i]:
+                    if type(conn_obj) == Synapses:
+                        nevis_top += conn_obj.verilog_mod_declaration()
 
         print(obj_lst_nevis)
         print(adj_mat_nevis)

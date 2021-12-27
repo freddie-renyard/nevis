@@ -219,7 +219,7 @@ def compile_and_save_params(model, network):
 def build_NevisEnsembleNetwork(model, network):
 
     # TODO Perform hardware checks before preceding with FPGA build.
-    
+
     # Extract relevant params
     compile_and_save_params(model, network)
 
