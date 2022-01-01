@@ -292,7 +292,15 @@ class Encoder:
             output_str += assignment.replace("<current_i>", str(i)).replace("<i_pre>", str(index)).replace("<i_post>", str(self.index))
         output_str += "\n"
         return output_str
-        
+
+    def verilog_validity_declaration(self, pre_indices):
+
+        assign = open("nevis/sv_source/ensemble_valids.sv").read()
+        output_str = ""
+        for i, index in enumerate(pre_indices):
+            output_str += assign.replace("<i>", str(self.index)).replace("<input_index>", str(i)).replace("<i_pre>", index)
+        return output_str
+
 class Synapses:
 
     def __init__(self, 
