@@ -222,13 +222,17 @@ class NevisCompiler:
                 for index in fan_in_indices:
                     if type(obj_lst_nevis[index]) != InputNode:
                         is_first = False
-                        break
+
 
                 # Declare the ensemble in the Verilog.
                 nevis_top += ens.verilog_mod_declaration()
 
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices
+                )
+
+                nevis_top += ens.verilog_validity_declaration(
+                    pre_indices = fan_in_indices
                 )
 
                 for conn_obj in adj_mat_nevis[i]:

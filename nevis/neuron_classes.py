@@ -298,7 +298,7 @@ class Encoder:
         assign = open("nevis/sv_source/ensemble_valids.sv").read()
         output_str = ""
         for i, index in enumerate(pre_indices):
-            output_str += assign.replace("<i>", str(self.index)).replace("<input_index>", str(i)).replace("<i_pre>", index)
+            output_str += assign.replace("<i>", str(self.index)).replace("<input_index>", str(i)).replace("<i_pre>", str(index))
         return output_str
 
 class Synapses:
