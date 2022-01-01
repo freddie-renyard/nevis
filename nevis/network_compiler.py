@@ -231,10 +231,6 @@ class NevisCompiler:
                     post_indices = fan_in_indices
                 )
 
-                nevis_top += ens.verilog_validity_declaration(
-                    pre_indices = fan_in_indices
-                )
-
                 for conn_obj in adj_mat_nevis[i]:
                     if type(conn_obj) == Synapses:
                         nevis_top += conn_obj.verilog_mod_declaration()
