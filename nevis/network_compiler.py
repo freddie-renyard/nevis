@@ -225,7 +225,7 @@ class NevisCompiler:
                         break
 
                 # Declare the ensemble in the Verilog.
-                nevis_top += ens.verilog_mod_declaration(is_first=is_first)
+                nevis_top += ens.verilog_mod_declaration()
 
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices

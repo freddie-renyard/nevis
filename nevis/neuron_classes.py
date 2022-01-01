@@ -279,13 +279,9 @@ class Encoder:
         output_str = open("nevis/sv_source/ensemble_wires.sv").read()
         return output_str.replace("<i>", str(self.index))
 
-    def verilog_mod_declaration(self, is_first):
+    def verilog_mod_declaration(self):
 
         output_str = open("nevis/sv_source/ensemble_mod.sv").read()
-        if is_first:
-            output_str = output_str.replace("<pulse>", "global_pulse")
-        else:
-            output_str = output_str.replace("<pulse>", ("activate_encoder_" + str(self.index)))
         return output_str.replace("<i>", str(self.index))
 
     def verilog_input_declaration(self, post_indices):

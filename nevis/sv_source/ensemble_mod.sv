@@ -21,10 +21,11 @@
         ) ensemble_0 (
             .clk(clk),
             .rst(rst),
-            .global_pulse(<pulse>),
+            //.global_pulse(<pulse>),
             
             .i_x(i_d_ensemble_<i>),
             .o_idle(o_idle_<i>),
+            .i_d_valids(i_d_valids_<i>),
             
             .o_fifo_empty(o_fifo_empty_<i>),
             .o_data_bus(o_spike_bus_<i>),
