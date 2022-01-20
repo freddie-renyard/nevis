@@ -50,8 +50,6 @@ class NevisCompiler:
         param_model = nengo.builder.Model()
         nengo.builder.network.build_network(param_model, model)
         
-        print()
-        
         # Create two object lists which hold the objects and
         # their associated built parameters.
         obj_lst_obj = []

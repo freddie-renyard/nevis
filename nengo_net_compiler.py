@@ -5,6 +5,8 @@ from nevis.global_tools import Global_Tools
 from nevis.network_compiler import NevisCompiler
 import numpy as np
 
+from nevis.nevis_networks import NevisNetwork
+
 # Define the input function to the neural population
 def input_func(t):
     return 1 #np.sin(t * 2*np.pi)
@@ -12,7 +14,7 @@ def input_func(t):
 def target_function(x):
     return x
 
-model = nengo.Network()
+model = Network()
 
 with model:
 

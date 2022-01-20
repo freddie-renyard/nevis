@@ -272,3 +272,17 @@ def build_NevisEnsembleNetwork(model, network):
             x=serial_port_input_sig
         )
     )
+
+class NevisNetwork(nengo.Network):
+
+    def __init__(self, label=None, seed=None, compile_network=True):
+        self.compile_network = compile_network
+
+        # Initialise the Network
+        super().__init__(label, seed)
+
+@nengo.builder.Builder.register(NevisNetwork)
+def build_NevisNetwork(model, network, progress):
+
+    if network.compile_network:
+        NevisCompiler().compile_network(network)
