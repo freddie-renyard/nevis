@@ -242,9 +242,8 @@ class NevisCompiler:
         nevis_top += "endmodule"
         print(nevis_top)
 
-        #plt.matshow(adj_mat_visual)
-        #plt.show()
-        exit()
+        with open("nevis/file_cache/nevis_compiled.sv", 'x') as output_file:
+            output_file.write(nevis_top)
 
     def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num):
         """This method inputs a Nengo ensemble (both object and built obj if needed)
