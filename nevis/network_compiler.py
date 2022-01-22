@@ -38,6 +38,10 @@ class NevisCompiler:
         self.sim_args = {}
         self.sim_args["dt"] = 0.001 # Default value; overridden in main compiler.
 
+        # Lists to store the input and output Nengo nodes, to allow for easy building
+        self.in_nodes_nengo  = []
+        self.out_nodes_nengo = []
+
     def compile_network(self, model):
         """Builds a model into a NeVIS network representation, ready for synthesis.
         """
@@ -138,6 +142,7 @@ class NevisCompiler:
                     # Append the dimensionality of the node to a list
                     # This is used to compile the model config JSON for the UART
                     in_node_dims.append(vertex.size_out)
+                    self.in_nodes_nengo.append(vertex)
 
                     uart_obj.in_nodes.append(source_node)
                     obj_lst_nevis.append(source_node)
@@ -162,6 +167,7 @@ class NevisCompiler:
                     # Append the dimensionality of the node to a list
                     # This is used to compile the model config JSON for the UART
                     out_node_dims.append(vertex.size_out)
+                    self.out_nodes_nengo.append(vertex)
                 
                     pre_obj = np.nonzero(adj_mat_visual[:,i])[0]
 

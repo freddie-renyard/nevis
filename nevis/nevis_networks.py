@@ -279,9 +279,31 @@ class NevisNetwork(nengo.Network):
     def __init__(self, network=None, label=None, seed=None, compile_network=True):
         self.target_network = network
         self.compile_network = compile_network
-
+        
         # Initialise the Network
         super().__init__(label, seed)
+    
+    def extract_io_nodes(self):
+
+        in_nodes  = []
+        out_nodes = []
+        out_conns = []
+
+        # Add all nodes on the network graph to a list.
+        for node in self.nodes:
+            if node.output is None:
+                out_nodes.append(node)
+
+                # Extract the connections which go into this node
+                output_conns = []
+                for conn in self.connections:
+                    if conn.post_obj == node:
+                        output_conns.append(conn)
+                out_conns.append(output_conns)
+            else:
+                in_nodes.append(node)
+                
+        return in_nodes, out_nodes, out_conns
 
 @nengo.builder.Builder.register(NevisNetwork)
 def build_NevisNetwork(model, network):
@@ -295,4 +317,58 @@ def build_NevisNetwork(model, network):
     else:
         timeout=10
     
+    # Open the model interfacing parameters
+    model_dict = ConfigTools.load_data("model_config.json")
+
+    in_nodes, out_nodes, out_conns = network.extract_io_nodes()
+
+    # Combine the data ports to allow for the serial interface to 
+    # communicate with Nengo
+    serial_port_sig = Signal(
+        np.zeros(sum(model_dict["in_node_dims"]) + sum(model_dict["out_node_dims"])),
+        name="serial_port"
+    )
+
     serial_port = serial_link.FPGANetworkPort(timeout)
+
+    # For each input node, define input signal and assign it to the model's input
+    for i, dimensionality in enumerate(model_dict["in_node_dims"]):
+        input_sig = Signal(np.zeros(dimensionality), name="input_{}".format(i))
+        model.sig[in_nodes[i]]["in"] = input_sig
+        model.sig[in_nodes[i]]["out"] = input_sig
+        model.add_op(Reset(input_sig))
+
+        # Build the input signal into the model
+        input_sig = model.build(nengo.synapses.Lowpass(0), input_sig)
+
+        # Copy the tx data to the input of the model in Nengo
+        model.add_op(
+            Copy(
+                input_sig,
+                serial_port_sig,
+                dst_slice=slice(0, dimensionality)
+            )
+        )
+
+    # For each output node, define the output signal and build it into the model
+    # Define the output signal
+    for i, dimensionality in enumerate(model_dict["out_node_dims"]):
+        output_sig = Signal(np.zeros(dimensionality), name="output_{}".format(i))
+        model.sig[out_nodes[i]]["out"] = output_sig
+
+        # Build the output connections into the model for each node
+        for conn in out_conns[i]:
+            if conn.synapse is not None:
+                model.build(conn.synapse, output_sig)
+
+        model.add_op(  
+            SimPyFunc(
+                output=output_sig,
+                fn=partial(serial_port.serial_comm_func, net=network, dt=model.dt),
+                t=model.time,
+                x=serial_port_sig
+            )
+        )
+
+    
+    
