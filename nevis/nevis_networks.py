@@ -295,4 +295,4 @@ def build_NevisNetwork(model, network):
     else:
         timeout=10
     
-    serial_port = serial_link.FPGAPort(timeout)
+    serial_port = serial_link.FPGANetworkPort(timeout)

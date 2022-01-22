@@ -173,15 +173,21 @@ class FPGANetworkPort:
 
         model_dict = ConfigTools.load_data("model_config.json")
 
-        self.input_depth = model_dict["in_node_depth"]
-        self.n_input_values = model_dict["n_input_values"]
-        self.bytes_to_send = math.ceil((self.input_depth * self.n_input_values) / 8.0)
+        # Input side
+        self.in_node_depth = model_dict["in_node_depth"]
+        self.in_node_dims = model_dict["in_node_dims"]
+        self.in_node_num = len(self.in_node_dims)
 
-        self.output_depths = int(model_dict["out_node_depth"])
-        self.output_scales = model_dict["out_node_scale"]
-        self.n_values = model_dict["n_output_values"]
-        self.bytes_to_read = math.ceil((self.output_depths*self.n_values) / 8.0)
-        self.rx_bits = self.n_values * (self.output_depths)
+        self.bytes_to_send = math.ceil((self.in_node_depth * sum(self.in_node_dims) * self.in_node_num) / 8.0)
+
+        # Output side
+        self.out_node_depth = int(model_dict["out_node_depth"])
+        self.out_node_scale = model_dict["out_node_scale"]
+        self.out_node_dims = model_dict["out_node_dims"]
+        self.out_node_num = len(self.out_node_dims)
+
+        self.rx_bits = self.out_node_depth * sum(self.out_node_dims) * self.out_node_num
+        self.bytes_to_read = math.ceil(self.rx_bits / 8.0)
         self.bit_excess = self.bytes_to_read * 8 - self.rx_bits
         
         # Define an empty link address
