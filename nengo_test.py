@@ -35,7 +35,7 @@ with model:
     fpga_ens = NevisEnsembleNetwork(
         n_neurons=neurons,
         dimensions=dimensions,
-        compile_design=True,
+        compile_design=False,
         t_pstc=t_pstc,
         tau_rc=tau_rc,
         function=target_function,

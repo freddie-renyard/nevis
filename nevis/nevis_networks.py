@@ -1,5 +1,4 @@
 from functools import partial
-from http.client import NETWORK_AUTHENTICATION_REQUIRED
 import nengo
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Copy, Reset, SimPyFunc
@@ -8,6 +7,7 @@ import math
 import logging
 
 from numpy.lib import index_tricks
+from sklearn import ensemble
 from nevis import neuron_classes
 from nevis import serial_link
 from nevis.config_tools import ConfigTools
@@ -289,8 +289,11 @@ class NevisNetwork(nengo.Network):
         out_nodes = []
         out_conns = []
 
+        """
         # Add all nodes on the network graph to a list.
         for node in self.nodes:
+            print(dir(node))
+            print(node)
             if node.output is None:
                 out_nodes.append(node)
 
@@ -302,7 +305,18 @@ class NevisNetwork(nengo.Network):
                 out_conns.append(output_conns)
             else:
                 in_nodes.append(node)
-                
+        """
+
+        for conn in self.connections:
+
+            if type(conn.pre_obj) == nengo.Node and type(conn.post_obj) == nengo.Ensemble:
+                # Input node
+                in_nodes.append(conn.pre_obj)
+            elif type(conn.pre_obj) == nengo.Ensemble and type(conn.post_obj) == nengo.Node:
+                # Output node
+                out_nodes.append(conn.post_obj)
+                out_conns.append([conn])
+
         return in_nodes, out_nodes, out_conns
 
 @nengo.builder.Builder.register(NevisNetwork)
@@ -316,11 +330,14 @@ def build_NevisNetwork(model, network):
         timeout=0
     else:
         timeout=10
+
+    in_nodes, out_nodes, out_conns = network.extract_io_nodes()
+
+    serial_port = serial_link.FPGANetworkPort(timeout)
     
     # Open the model interfacing parameters
     model_dict = ConfigTools.load_data("model_config.json")
 
-    in_nodes, out_nodes, out_conns = network.extract_io_nodes()
 
     # Combine the data ports to allow for the serial interface to 
     # communicate with Nengo
@@ -329,11 +346,10 @@ def build_NevisNetwork(model, network):
         name="serial_port"
     )
 
-    serial_port = serial_link.FPGANetworkPort(timeout)
-
     # For each input node, define input signal and assign it to the model's input
     for i, dimensionality in enumerate(model_dict["in_node_dims"]):
-        input_sig = Signal(np.zeros(dimensionality), name="input_{}".format(i))
+
+        input_sig = Signal(np.zeros(dimensionality))
         model.sig[in_nodes[i]]["in"] = input_sig
         model.sig[in_nodes[i]]["out"] = input_sig
         model.add_op(Reset(input_sig))
@@ -353,7 +369,7 @@ def build_NevisNetwork(model, network):
     # For each output node, define the output signal and build it into the model
     # Define the output signal
     for i, dimensionality in enumerate(model_dict["out_node_dims"]):
-        output_sig = Signal(np.zeros(dimensionality), name="output_{}".format(i))
+        output_sig = Signal(np.zeros(dimensionality), name=out_nodes[i].label)
         model.sig[out_nodes[i]]["out"] = output_sig
 
         # Build the output connections into the model for each node
@@ -369,6 +385,3 @@ def build_NevisNetwork(model, network):
                 x=serial_port_sig
             )
         )
-
-    
-    
