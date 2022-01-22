@@ -1,4 +1,5 @@
 from functools import partial
+from http.client import NETWORK_AUTHENTICATION_REQUIRED
 import nengo
 from nengo.builder.signal import Signal
 from nengo.builder.operator import Copy, Reset, SimPyFunc
@@ -275,14 +276,23 @@ def build_NevisEnsembleNetwork(model, network):
 
 class NevisNetwork(nengo.Network):
 
-    def __init__(self, label=None, seed=None, compile_network=True):
+    def __init__(self, network=None, label=None, seed=None, compile_network=True):
+        self.target_network = network
         self.compile_network = compile_network
 
         # Initialise the Network
         super().__init__(label, seed)
 
 @nengo.builder.Builder.register(NevisNetwork)
-def build_NevisNetwork(model, network, progress):
+def build_NevisNetwork(model, network):
 
     if network.compile_network:
         NevisCompiler().compile_network(network)
+
+    # Instantiate a serial link object - no timeout if the model is being compiled.
+    if network.compile_design:
+        timeout=0
+    else:
+        timeout=10
+    
+    serial_port = serial_link.FPGAPort(timeout)

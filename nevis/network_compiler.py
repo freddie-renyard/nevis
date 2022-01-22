@@ -46,6 +46,8 @@ class NevisCompiler:
         ConfigTools.purge_model_config()
         Filetools.purge_directory("nevis/file_cache")
 
+        print(model.all_objects)
+
         # Build the model, to allow for parameter exrtraction.
         param_model = nengo.builder.Model()
         nengo.builder.network.build_network(param_model, model)
@@ -77,6 +79,8 @@ class NevisCompiler:
 
         param_class = type(param_model.params[model.connections[1]])
         adj_mat_params = adj_mat_params.astype(param_class)
+        
+        print(adj_mat_visual)
 
         # A note on convention: the first index of the 
         # adjacency matrix refers to the 'source' object 
