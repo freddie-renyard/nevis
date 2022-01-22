@@ -1,6 +1,9 @@
 import logging
+from operator import mod
 import os
 import json
+
+from numpy import ModuleDeprecationWarning
 
 from nevis.filetools import Filetools
 
@@ -51,7 +54,8 @@ class ConfigTools:
             
     @classmethod
     def create_model_config_file(cls, in_node_depth, out_node_depth, out_node_scale, n_input_values, n_output_values):
-        """ Saves compiled model's interfacing parameters into a JSON config file.
+        """ LEGACY
+        Saves compiled model's interfacing parameters into a JSON config file.
         Parameters
         ----------
         in_node_depths : [int]
@@ -71,6 +75,44 @@ class ConfigTools:
         model_dict["out_node_scale"] = out_node_scale
         model_dict["n_input_values"] = n_input_values
         model_dict["n_output_values"] = n_output_values
+
+        with open("nevis/config/model_config.json", "w") as json_file:
+            json.dump(model_dict, fp=json_file, indent=4)
+        json_file.close()
+
+    @classmethod
+    def create_full_model_config(
+        cls, 
+        in_node_depth, in_node_dims, in_node_num,
+        out_node_depth, out_node_dims, out_node_num, out_node_scale
+        ):
+        """Creates a JSON file which describes the parameters needed
+        to interpret the binary data from the UART.
+
+        
+        Parameters
+        ----------
+        node_depth: int
+            The bit depth of the i/o values
+        node_dims: lst
+            The dimensionalities of each of the i/o nodes
+        node_num: int
+            The number of i/o nodes
+        out_node_scale: int
+            The number of binary orders of magnitude to divide by
+            to achieve the correct output scale
+        """
+
+        model_dict = {}
+
+        model_dict["in_node_depth"] = in_node_depth
+        model_dict["in_node_dims"]  = in_node_dims
+        model_dict["in_node_num"]   = in_node_num
+
+        model_dict["out_node_depth"] = out_node_depth
+        model_dict["out_node_dims"]  = out_node_dims
+        model_dict["out_node_num"]   = out_node_num
+        model_dict["out_node_scale"] = out_node_scale
 
         with open("nevis/config/model_config.json", "w") as json_file:
             json.dump(model_dict, fp=json_file, indent=4)
