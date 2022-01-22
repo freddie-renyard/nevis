@@ -97,13 +97,6 @@ class NevisCompiler:
                             adj_mat_obj[i][j] = edge
                             adj_mat_params[i][j] = param_model.params[edge]
                             adj_mat_visual[i][j] = 1
-        
-        # High level overview:
-        # 1. Begin iterating through the objects.
-        # 2. Generate the objects.
-        # 3. If ensemble, add it's Verilog wires to the top file.
-        # 4. Generate the connections associated with the outputs 
-        #   from the object.
 
         # Compile the parameters first, then compile the modules.
         # This will make absolutely sure that Verilog does not infer 
@@ -118,6 +111,8 @@ class NevisCompiler:
         nevis_top = open("nevis/sv_source/nevis_top.sv").read()
 
         obj_lst_nevis = []
+        in_node_dims  = []
+        out_node_dims = []
         
         for i, vertex in enumerate(obj_lst_obj):
                 
@@ -140,6 +135,10 @@ class NevisCompiler:
                         post_objs = conn_indices
                     )
 
+                    # Append the dimensionality of the node to a list
+                    # This is used to compile the model config JSON for the UART
+                    in_node_dims.append(vertex.size_out)
+
                     uart_obj.in_nodes.append(source_node)
                     obj_lst_nevis.append(source_node)
 
@@ -159,6 +158,10 @@ class NevisCompiler:
                         dims = vertex.size_out,
                         index = i
                     )
+
+                    # Append the dimensionality of the node to a list
+                    # This is used to compile the model config JSON for the UART
+                    out_node_dims.append(vertex.size_out)
                 
                     pre_obj = np.nonzero(adj_mat_visual[:,i])[0]
 
@@ -246,6 +249,16 @@ class NevisCompiler:
 
         with open("nevis/file_cache/nevis_compiled.sv", 'x') as output_file:
             output_file.write(nevis_top)
+        
+        # Save the compiled models's parameters in a JSON file
+        ConfigTools.create_full_model_config(
+            in_node_depth   = self.comp_args["bits_input"],
+            in_node_dims    = in_node_dims,
+
+            out_node_depth  = self.comp_args["n_connection_output"],
+            out_node_dims   = out_node_dims,
+            out_node_scale  = self.comp_args["n_connection_output"]-4,
+        )
 
     def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num):
         """This method inputs a Nengo ensemble (both object and built obj if needed)
@@ -324,7 +337,8 @@ class NevisCompiler:
         return output_hardware
 
     def compile_ensemble(self, model, network):
-        """ This function has many arguments prespecified, as full network compilation
+        """ LEGACY
+        This function has many arguments prespecified, as full network compilation
         is not supported yet. These will gradually be phased out as more functionality
         is added.
         """
@@ -347,7 +361,6 @@ class NevisCompiler:
         )
 
         # Save the compiled models's parameters in a JSON file
-        # TODO adapt this for higher dimensional representation.
         ConfigTools.create_model_config_file(
             in_node_depth   = input_hardware.n_x,
             out_node_depth  = output_hardware.n_output,
