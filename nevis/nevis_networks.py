@@ -338,16 +338,18 @@ def build_NevisNetwork(model, network):
     # Open the model interfacing parameters
     model_dict = ConfigTools.load_data("model_config.json")
 
+    in_node_dims = model_dict["in_node_dims"]
+    out_node_dims = model_dict["out_node_dims"]
 
     # Combine the data ports to allow for the serial interface to 
     # communicate with Nengo
     serial_port_sig = Signal(
-        np.zeros(sum(model_dict["in_node_dims"]) + sum(model_dict["out_node_dims"])),
+        np.zeros(sum(in_node_dims) + sum(out_node_dims)),
         name="serial_port"
     )
 
     # For each input node, define input signal and assign it to the model's input
-    for i, dimensionality in enumerate(model_dict["in_node_dims"]):
+    for i, dimensionality in enumerate(in_node_dims):
 
         input_sig = Signal(np.zeros(dimensionality))
         model.sig[in_nodes[i]]["in"] = input_sig
@@ -358,30 +360,44 @@ def build_NevisNetwork(model, network):
         input_sig = model.build(nengo.synapses.Lowpass(0), input_sig)
 
         # Copy the tx data to the input of the model in Nengo
+        dim_sum = sum(in_node_dims[:i]) * (i != 0)
+        dim_sum_next = sum(in_node_dims[:i+1])
+        
         model.add_op(
             Copy(
                 input_sig,
                 serial_port_sig,
-                dst_slice=slice(0, dimensionality)
+                dst_slice = slice(dim_sum,dim_sum_next)
             )
         )
 
     # For each output node, define the output signal and build it into the model
     # Define the output signal
-    for i, dimensionality in enumerate(model_dict["out_node_dims"]):
-        output_sig = Signal(np.zeros(dimensionality), name=out_nodes[i].label)
-        model.sig[out_nodes[i]]["out"] = output_sig
+
+    # The concatenated outputs
+    full_output = Signal(np.zeros(sum(out_node_dims)), name="concat_serial_out")
+
+    for i, dimensionality in enumerate(out_node_dims):
+
+        i_current = sum(out_node_dims[:i]) * (i != 0)
+        i_next    = sum(out_node_dims[:i+1])
+
+        # Assign the models Simulator output to the appropriate part of the
+        # flattened serial data.
+
+        model.sig[out_nodes[i]]["out"] = full_output[i_current:i_next]
 
         # Build the output connections into the model for each node
         for conn in out_conns[i]:
             if conn.synapse is not None:
-                model.build(conn.synapse, output_sig)
-
-        model.add_op(  
-            SimPyFunc(
-                output=output_sig,
-                fn=partial(serial_port.serial_comm_func, net=network, dt=model.dt),
-                t=model.time,
-                x=serial_port_sig
-            )
+                model.build(conn.synapse, full_output[i_current:i_next])
+        
+    # Add the serial port as an object to the simulator
+    model.add_op(  
+        SimPyFunc(
+            output=full_output[::-1],
+            fn=partial(serial_port.serial_comm_func, net=network, dt=model.dt),
+            t=model.time,
+            x=serial_port_sig
         )
+    )
