@@ -558,7 +558,7 @@ class UART:
                     assign = assign.replace("<i_dim>", str(dim))
 
                     assign = assign.replace("<bit_pre>", str(bit_pointer))
-                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_output_data))
+                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_output_data - 1))
 
                     verilog_out = verilog_out.replace("<tx-flag>", assign)
 
@@ -587,11 +587,11 @@ class UART:
                     assign = assign.replace("<i_dim>", str(dim))
 
                     assign = assign.replace("<bit_pre>", str(bit_pointer))
-                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_output_data))
+                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_input_data - 1))
 
                     verilog_out = verilog_out.replace("<rx-flag>", assign)
 
-                    bit_pointer += self.n_output_data
+                    bit_pointer += self.n_input_data
 
             self.total_rx_entries += in_node.dims
 

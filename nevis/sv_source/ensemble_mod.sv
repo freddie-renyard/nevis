@@ -30,6 +30,6 @@
             .o_fifo_empty(o_fifo_empty_<i>),
             .o_data_bus(o_spike_bus_<i>),
             .i_rd_en(i_rd_en_<i>),
-            .o_global_pulse_dly(global_pulse_dly_<i>),
+            .o_global_pulse_dly(global_pulse_dly_<i>)
         );
 

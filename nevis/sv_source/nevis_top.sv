@@ -1,4 +1,4 @@
-module nevis_top(
+module nevis_compiled(
     input clk,
     input rst,
     
