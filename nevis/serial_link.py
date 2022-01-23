@@ -231,8 +231,6 @@ class FPGANetworkPort:
         # Scale the input value up
         in_scale = 2 ** (self.in_node_depth - 1)
 
-        print(d)
-
         full_tx_word = ""
         d = d[0:int(len(d)/2)]
         for value in d:
@@ -273,4 +271,4 @@ class FPGANetworkPort:
 
         test_out = [0.2, 0.3, 0.4, -0.9, -0.8, -0.7]
 
-        return test_out
+        return hardware_vals

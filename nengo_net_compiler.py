@@ -10,21 +10,21 @@ from nevis.nevis_networks import NevisNetwork
 
 # Define the input function to the neural population
 def input_func_sin(t):
-    return np.sin(t * 2*np.pi), 1
+    return np.sin(t * 2*np.pi) #, np.cos(t * 2*np.pi)
 
 def input_func_cos(t):
-    return np.cos(t * 2 * np.pi),1,1
+    return np.cos(t * 2 * np.pi)
 
 def target_function(x):
     return x
 
 model = Network()
 
-dimensions = 2
+dimensions = 1
 
 with model:
 
-    nevis_model = NevisNetwork()
+    nevis_model = NevisNetwork(compile_network=True)
     with nevis_model:
         
         t_pstc = Global_Tools.inverse_pstc(128, 0.001)

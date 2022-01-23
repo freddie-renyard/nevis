@@ -291,7 +291,7 @@ class Encoder:
 
         output_str = ""
         for i, index in enumerate(post_indices):
-            
+
             for dim in range(self.input_dims):
                 assign_temp = assignment.replace("<current_dim>", str(dim))
                 assign_temp = assign_temp.replace("<current_i>", str(i))
@@ -559,10 +559,12 @@ class UART:
         tx_assignment = open('nevis/sv_source/uart_tx_ins.sv').read()
         
         bit_pointer = 0
+        word_index = 0
         for out_node in self.out_nodes:
             for obj in out_node.pre_objs:
                 for dim in range(out_node.dims):
                     assign = tx_assignment.replace("<i_pre>", str(obj))
+                    assign = assign.replace("<valid_i>", str(word_index))
                     assign = assign.replace("<i_post>", str(out_node.index))
                     assign = assign.replace("<i_dim>", str(dim))
 
@@ -572,6 +574,7 @@ class UART:
                     verilog_out = verilog_out.replace("<tx-flag>", assign)
 
                     bit_pointer += self.n_output_data
+                    word_index  += 1
 
             self.total_tx_entries += out_node.dims
         
@@ -608,6 +611,11 @@ class UART:
 
         verilog_out = verilog_out.replace("<rx-flag>", "")
 
+        uart_conn_assignment = open('nevis/sv_source/uart_conn_valid_wires.sv').read()
+        for in_node in self.in_nodes:
+            for post_obj in in_node.post_objs:
+                verilog_out += uart_conn_assignment.replace("<i_pre>", str(in_node.index)).replace("<i_post>", str(post_obj))
+
         ConfigTools.create_model_config_file(
             in_node_depth = self.n_input_data,
             out_node_depth=self.n_output_data,
@@ -616,5 +624,5 @@ class UART:
             n_output_values=output_num
         )
 
-        return verilog_out
+        return verilog_out + "\n"
 

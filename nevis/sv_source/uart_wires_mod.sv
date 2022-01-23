@@ -5,10 +5,23 @@
     localparam N_DATA_TX    = N_TX * TX_NUM_OUTS; 
     localparam N_DATA_RX    = N_RX * RX_NUM_INS; 
     
-    wire        [N_DATA_TX-1:0] uart_tx_data;
+    reg  signed [N_DATA_TX-1:0]     uart_tx_data;
+    reg         [TX_NUM_OUTS-1:0]   uart_tx_valid;
+
     wire signed [N_DATA_RX-1:0] uart_rx_data;
     
     <tx-flag>
+
+    // Reset the transmit register if reset is asserted or all the data is valid.
+    always @(posedge clk) begin
+        if (rst | &uart_tx_valid) begin
+            uart_tx_valid <= 0;
+        end
+    end
+
+    // Output the data if all of the bits in the validity register are high.
+    wire output_valid;
+    assign output_valid = &uart_tx_valid;
 
     uart_top #(
         .BAUD_RATE(BAUD_RATE),
@@ -23,11 +36,21 @@
         .rx(rx),
         .tx(tx),
         .i_data(uart_tx_data),
-        .i_new_data(o_output_valid),
+        .i_new_data(/*output_valid*/o_d_valid_conn_2C1),
         .o_data(uart_rx_data),
         .o_new_data(rx_new_data),
         .i_block(1'b0),
         .o_busy(o_uart_busy)
     );
+
+    basic_scheduler scheduler (
+        .clk(clk),
+        .rst(rst),
+        .i_block(o_uart_busy),
+        .i_trigger(rx_new_data),
+        .o_global_pulse(o_scheduler)
+    );
+
+    assign debug_data = o_d_conn_0C2[0:0];
 
     <rx-flag>
