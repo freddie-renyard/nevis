@@ -3,12 +3,7 @@ module nevis_top(
     input rst,
     
     input rx,
-    output tx,
-    
-    // Debug signals
-    output o_spike,
-    output [$clog2(N_NEURON_0)-1:0] o_spike_addr,
-    output debug_d_valid
+    output tx
     );
     
     `include "model_params.vh"

@@ -324,6 +324,7 @@ def build_NevisNetwork(model, network):
 
     if network.compile_network:
         NevisCompiler().compile_network(network)
+        call_synthesis_server()
 
     # Instantiate a serial link object - no timeout if the model is being compiled.
     if network.compile_network:

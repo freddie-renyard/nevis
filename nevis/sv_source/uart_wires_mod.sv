@@ -2,7 +2,7 @@
     
     // Deconcatenate the data to be transmitted. This is done to allow easier interfacing
     // with multiple ensembles later on in development.
-    localparam N_DATA_TX    = N_CONN_OUT * TX_NUM_OUTS; 
+    localparam N_DATA_TX    = N_TX * TX_NUM_OUTS; 
     
     wire        [N_DATA_TX-1:0] uart_tx_data;
     wire signed [N_X_0*INPUT_DIMS_0-1:0] uart_rx_data;

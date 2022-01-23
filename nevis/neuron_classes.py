@@ -529,16 +529,17 @@ class UART:
         self.out_nodes = []
         self.in_nodes = []
 
-        self.save_params()
+        self.total_tx_entries = 0
+        self.total_rx_entries = 0
 
     def save_params(self):
 
         with open("nevis/file_cache/model_params.vh", "a") as verilog_header:
-            verilog_header.write("// UART parameters")
+            verilog_header.write("// UART parameters\n")
             verilog_header.write("parameter N_RX = " + str(self.n_input_data) + ",\n")
             verilog_header.write("N_TX = " + str(self.n_output_data) + ",\n")
-            verilog_header.write("TX_NUM_OUTS = " + str(len(self.out_nodes)) + ",\n")
-            verilog_header.write("RX_NUM_INS = " + str(len(self.in_nodes)) + ",\n")
+            verilog_header.write("TX_NUM_OUTS = " + str(self.total_tx_entries) + ",\n")
+            verilog_header.write("RX_NUM_INS = " + str(self.total_rx_entries) + ",\n")
             verilog_header.write("BAUD_RATE = " + str(self.baud) + ";\n\n")
 
     def verilog_create_uart(self):
@@ -562,6 +563,8 @@ class UART:
                     verilog_out = verilog_out.replace("<tx-flag>", assign)
 
                     bit_pointer += self.n_output_data
+
+            self.total_tx_entries += out_node.dims
         
         output_num = bit_pointer % self.n_output_data
 
@@ -589,6 +592,8 @@ class UART:
                     verilog_out = verilog_out.replace("<rx-flag>", assign)
 
                     bit_pointer += self.n_output_data
+
+            self.total_rx_entries += in_node.dims
 
         input_num = bit_pointer % self.n_input_data
 

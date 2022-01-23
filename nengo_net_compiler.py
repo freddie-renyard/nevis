@@ -10,7 +10,7 @@ from nevis.nevis_networks import NevisNetwork
 
 # Define the input function to the neural population
 def input_func_sin(t):
-    return np.sin(t * 2*np.pi), 1,1
+    return np.sin(t * 2*np.pi), 1
 
 def input_func_cos(t):
     return np.cos(t * 2 * np.pi),1,1
@@ -20,7 +20,7 @@ def target_function(x):
 
 model = Network()
 
-dimensions = 3
+dimensions = 2
 
 with model:
 
@@ -31,7 +31,7 @@ with model:
         tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
         in_node_1 = nengo.Node(size_in=dimensions)
-        in_node_2 = nengo.Node(size_in=dimensions)
+        #in_node_2 = nengo.Node(size_in=dimensions)
 
         a = nengo.Ensemble(
             n_neurons=50, 
@@ -39,26 +39,28 @@ with model:
             neuron_type=nengo.neurons.LIF(tau_rc)
         )
 
+        """
         b = nengo.Ensemble(
             n_neurons=50, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc)
         )
+        """
 
         nengo.Connection(in_node_1, a)
-        nengo.Connection(in_node_2, b)
+        #nengo.Connection(in_node_2, b)
         
         output_node_1 = nengo.Node(size_in=dimensions)
         nengo.Connection(a, output_node_1)
 
-        output_node_2 = nengo.Node(size_in=dimensions)
-        nengo.Connection(b, output_node_2)
+        #output_node_2 = nengo.Node(size_in=dimensions)
+        #nengo.Connection(b, output_node_2)
 
     stim1 = nengo.Node(input_func_sin)
     nengo.Connection(stim1, nevis_model.nodes[0])
 
-    stim2 = nengo.Node(input_func_cos)
-    nengo.Connection(stim2, nevis_model.nodes[1])
+    #stim2 = nengo.Node(input_func_cos)
+    #nengo.Connection(stim2, nevis_model.nodes[1])
 
 import nengo_gui
 nengo_gui.GUI(__file__).start()

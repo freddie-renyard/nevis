@@ -216,6 +216,7 @@ class NevisCompiler:
 
         # CREATE THE UART OBJECT AND INSTANTIATE IT IN THE VERILOG.
         nevis_top += uart_obj.verilog_create_uart()
+        uart_obj.save_params()
 
         # CREATE THE ENSEMBLE OBJECTS AND COMPILE THEIR CONNECTIONS.
 
@@ -233,7 +234,6 @@ class NevisCompiler:
                 for index in fan_in_indices:
                     if type(obj_lst_nevis[index]) != InputNode:
                         is_first = False
-
 
                 # Declare the ensemble in the Verilog.
                 nevis_top += ens.verilog_mod_declaration()
