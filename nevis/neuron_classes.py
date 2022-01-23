@@ -287,11 +287,20 @@ class Encoder:
     def verilog_input_declaration(self, post_indices):
 
         assignment = open("nevis/sv_source/ensemble_ins.sv").read()
+        valid_assign = open("nevis/sv_source/ensemble_ins_valid.sv").read()
+
         output_str = ""
         for i, index in enumerate(post_indices):
-            output_str += assignment.replace("<current_i>", str(i)).replace("<i_pre>", str(index)).replace("<i_post>", str(self.index))
-        output_str += "\n"
-        return output_str
+            
+            for dim in range(self.input_dims):
+                assign_temp = assignment.replace("<current_dim>", str(dim))
+                assign_temp = assign_temp.replace("<current_i>", str(i))
+                output_str += assign_temp.replace("<i_pre>", str(index)).replace("<i_post>", str(self.index))
+
+            output_str += valid_assign.replace("<current_i>", str(i)).replace("<i_pre>", str(index)).replace("<i_post>", str(self.index))
+            output_str += "\n"
+
+        return output_str + "\n"
         
 class Synapses:
 
