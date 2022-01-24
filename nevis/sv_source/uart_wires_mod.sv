@@ -13,11 +13,13 @@
     <tx-flag>
 
     // Reset the transmit register if reset is asserted or all the data is valid.
+    /*
     always @(posedge clk) begin
         if (rst | &uart_tx_valid) begin
             uart_tx_valid <= 0;
         end
     end
+    */
 
     // Output the data if all of the bits in the validity register are high.
     wire output_valid;
@@ -36,7 +38,7 @@
         .rx(rx),
         .tx(tx),
         .i_data(uart_tx_data),
-        .i_new_data(/*output_valid*/o_d_valid_conn_2C1),
+        .i_new_data(output_valid),
         .o_data(uart_rx_data),
         .o_new_data(rx_new_data),
         .i_block(1'b0),
@@ -51,6 +53,6 @@
         .o_global_pulse(o_scheduler)
     );
 
-    assign debug_data = o_d_conn_0C2[0:0];
+    assign debug_data = o_d_conn_2C1[0];
 
     <rx-flag>

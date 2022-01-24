@@ -488,11 +488,13 @@ class OutputNode:
 
 class DirectConnection:
 
-    def __init__(self, dims, pre_index, post_index):
+    def __init__(self, dims, pre_index, post_index, bit_depth):
 
         self.dims = dims
         self.pre_index = pre_index
         self.post_index = post_index
+
+        self.bit_depth = bit_depth
 
         self.save_params()
 
@@ -507,7 +509,7 @@ class DirectConnection:
         verilog_header = open("nevis/file_cache/model_params.vh", "a")
 
         verilog_header.write(("// Connection " + index + ' Params' + '\n'))
-        verilog_header.write(('parameter ' + 'N_OUTPUT_' + index + ' = ' + str(1) + ',' + '\n'))
+        verilog_header.write(('parameter ' + 'N_OUTPUT_' + index + ' = ' + str(self.bit_depth) + ',' + '\n'))
         verilog_header.write(('OUTPUT_DIMS_' + index + ' = ' + str(self.dims) + ';' + '\n'))
 
         verilog_header.write('\n')

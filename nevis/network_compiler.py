@@ -152,8 +152,10 @@ class NevisCompiler:
                         source_conn = DirectConnection(
                             dims = node_data[0].pre_obj.size_out,
                             pre_index = i,
-                            post_index = node_data[1]
+                            post_index = node_data[1],
+                            bit_depth = self.comp_args["n_connection_output"]
                         )
+
                         nevis_top += source_conn.verilog_wire_declaration()
 
                         adj_mat_nevis[i][node_data[1]] = source_conn

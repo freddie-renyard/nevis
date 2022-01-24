@@ -51,7 +51,7 @@ with model:
         #nengo.Connection(in_node_2, b)
         
         output_node_1 = nengo.Node(size_in=dimensions)
-        nengo.Connection(a, output_node_1)
+        nengo.Connection(a, output_node_1, synapse=t_pstc)
 
         #output_node_2 = nengo.Node(size_in=dimensions)
         #nengo.Connection(b, output_node_2)
