@@ -5,8 +5,8 @@
     localparam N_DATA_TX    = N_TX * TX_NUM_OUTS; 
     localparam N_DATA_RX    = N_RX * RX_NUM_INS; 
     
-    reg  signed [N_DATA_TX-1:0]     uart_tx_data;
-    reg         [TX_NUM_OUTS-1:0]   uart_tx_valid;
+    wire  signed [N_DATA_TX-1:0]     uart_tx_data;
+    wire         [TX_NUM_OUTS-1:0]   uart_tx_valid;
 
     wire signed [N_DATA_RX-1:0] uart_rx_data;
     
@@ -21,10 +21,6 @@
     end
     */
 
-    // Output the data if all of the bits in the validity register are high.
-    wire output_valid;
-    assign output_valid = &uart_tx_valid;
-
     uart_top #(
         .BAUD_RATE(BAUD_RATE),
         .CLK_FREQ_MHZ(CLK_FREQ_MHZ),
@@ -38,7 +34,7 @@
         .rx(rx),
         .tx(tx),
         .i_data(uart_tx_data),
-        .i_new_data(output_valid),
+        .i_new_data(uart_tx_valid),
         .o_data(uart_rx_data),
         .o_new_data(rx_new_data),
         .i_block(1'b0),
