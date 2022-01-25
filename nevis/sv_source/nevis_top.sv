@@ -6,7 +6,7 @@ module nevis_compiled(
     output tx,
     output [7:0] debug_data,
 
-    output [$clog2(N_NEURON_2)-1:0] o_spike_addr,
+    output [$clog2(50)-1:0] o_spike_addr,
     output o_spike,
     output debug_d_valid
     );

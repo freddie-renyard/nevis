@@ -189,7 +189,7 @@ class FPGANetworkPort:
         self.n_values_to_rx = sum(self.out_node_dims)
         self.out_node_num = len(self.out_node_dims)
 
-        self.rx_bits = self.out_node_depth * sum(self.out_node_dims) * self.out_node_num
+        self.rx_bits = self.out_node_depth * sum(self.out_node_dims)
         self.bytes_to_read = math.ceil(self.rx_bits / 8.0)
         self.bit_excess = self.bytes_to_read * 8 - self.rx_bits
         
@@ -211,7 +211,7 @@ class FPGANetworkPort:
         
         while type(self.link_addr) == int: 
             try:
-                self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005) # , timeout=0.0005
+                self.link_addr = serial.Serial(self.port, baudrate=self.baud_rate, timeout=0.0005)
                 logger.info(('INFO: Opened serial port to device at' + self.link_addr.name))
                 print('[NeVIS]: Opened serial port to device at', self.link_addr.name)
             except:
@@ -253,7 +253,9 @@ class FPGANetworkPort:
         t_end = timer()
 
         #ser.flush()
-        hardware_vals = [0 for _ in range(self.n_values_to_rx)]
+        # The default value has been set to 1.1 for easier error 
+        # detection (as many failures can cause a 0)
+        hardware_vals = [1.1 for _ in range(self.n_values_to_rx)]
     
         data = bitstring.BitArray(rx_data).bin
         

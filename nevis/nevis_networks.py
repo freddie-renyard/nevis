@@ -396,7 +396,7 @@ def build_NevisNetwork(model, network):
     # Add the serial port as an object to the simulator
     model.add_op(  
         SimPyFunc(
-            output=full_output[::-1],
+            output=full_output,
             fn=partial(serial_port.serial_comm_func, net=network, dt=model.dt),
             t=model.time,
             x=serial_port_sig
