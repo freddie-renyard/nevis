@@ -591,22 +591,29 @@ class UART:
         # the code assumes consistent dimensionality between input connections.
         # Add this functionality by passing connection dimensionality data to
         # the input node.
-        bit_pointer = 0
+        bit_addr_node = 0
+        bit_addr_dim = 0
+
         for in_node in self.in_nodes:
             for post_index in in_node.post_objs:
+
+                bit_addr_dim = 0
+
                 # The following assumes constant connection dimensionality
                 for dim in range(in_node.dims):
                     assign = rx_assignment.replace("<i_pre>", str(in_node.index))
                     assign = assign.replace("<i_post>", str(post_index))
                     assign = assign.replace("<i_dim>", str(dim))
 
-                    assign = assign.replace("<bit_pre>", str(bit_pointer))
-                    assign = assign.replace("<bit_post>", str(bit_pointer + self.n_input_data - 1))
+                    addr_total = bit_addr_dim + bit_addr_node
+                    assign = assign.replace("<bit_pre>", str(addr_total))
+                    assign = assign.replace("<bit_post>", str(addr_total + self.n_input_data - 1))
 
                     verilog_out = verilog_out.replace("<rx-flag>", assign)
 
-                    bit_pointer += self.n_input_data
-
+                    bit_addr_dim += self.n_input_data
+            
+            bit_addr_node += bit_addr_dim
             self.total_rx_entries += in_node.dims
 
         input_num = bit_pointer % self.n_input_data

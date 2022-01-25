@@ -26,14 +26,13 @@ dimensions = 4
 
 with model:
 
-    nevis_model = NevisNetwork(compile_network=False)
+    nevis_model = NevisNetwork(compile_network=True)
     with nevis_model:
         
         t_pstc = Global_Tools.inverse_pstc(128, 0.001)
         tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
         in_node_1 = nengo.Node(size_in=dimensions)
-        in_node_2 = nengo.Node(size_in=dimensions)
 
         a = nengo.Ensemble(
             n_neurons=100, 
@@ -42,13 +41,13 @@ with model:
         )
 
         b = nengo.Ensemble(
-            n_neurons=50, 
+            n_neurons=150, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc)
         )
         
         nengo.Connection(in_node_1, a)
-        nengo.Connection(in_node_2, b)
+        nengo.Connection(in_node_1, b)
         
         output_node_1 = nengo.Node(size_in=dimensions)
         nengo.Connection(a, output_node_1, synapse=t_pstc)
@@ -58,9 +57,6 @@ with model:
 
     stim1 = nengo.Node(input_func_sin)
     nengo.Connection(stim1, nevis_model.nodes[0])
-
-    stim2 = nengo.Node(input_func_cos)
-    nengo.Connection(stim2, nevis_model.nodes[1])
 
 import nengo_gui
 nengo_gui.GUI(__file__).start()

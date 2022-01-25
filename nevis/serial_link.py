@@ -92,8 +92,6 @@ class FPGAPort:
         # Scale the input value up
         in_scale = 2 ** (self.input_depth - 1)
 
-        print(d)
-
         full_tx_word = ""
         d = d[0:int(len(d)/2)]
         for value in d:
@@ -179,6 +177,7 @@ class FPGANetworkPort:
         self.in_node_depth = model_dict["in_node_depth"]
         self.in_node_dims = model_dict["in_node_dims"]
         self.in_node_num = len(self.in_node_dims)
+        self.n_values_to_tx = sum(self.in_node_dims)
 
         self.bytes_to_send = math.ceil((self.in_node_depth * sum(self.in_node_dims) * self.in_node_num) / 8.0)
 
@@ -233,7 +232,8 @@ class FPGANetworkPort:
         in_scale = 2 ** (self.in_node_depth - 1)
 
         full_tx_word = ""
-        d = d[0:int(len(d)/2)]
+        d = d[0:self.n_values_to_tx]
+
         for value in d:
             
             output_num = int(value * in_scale)
