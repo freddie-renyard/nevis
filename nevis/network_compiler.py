@@ -30,7 +30,7 @@ class NevisCompiler:
         self.comp_args["radix_weights"]  = 7
         self.comp_args["n_dv_post"]      = 10
         self.comp_args["n_activ_extra"]  = 3
-        self.comp_args["n_connection_output"]   = 10
+        self.comp_args["n_connection_output"]   = 8
 
         self.comp_args["min_float_val"]  = 1*2**-50
 
@@ -184,7 +184,7 @@ class NevisCompiler:
             elif type(vertex) == nengo.Ensemble:
                 
                 # Count the number of inputs to the ensemble
-                input_num = np.count_nonzero(adj_mat_obj[i])
+                input_num = np.count_nonzero(np.transpose(adj_mat_obj)[i])
 
                 # Generate the ensemble and add it's parameter 
                 # declarations to the nevis_top file.
@@ -243,10 +243,14 @@ class NevisCompiler:
                 nevis_top += ens.verilog_input_declaration(
                     post_indices = fan_in_indices
                 )
-
+                
+                # Ensure that the read enable signal is only defined for one of the fan out
+                # connections.
+                define_rd_en = True
                 for conn_obj in adj_mat_nevis[i]:
                     if type(conn_obj) == Synapses:
-                        nevis_top += conn_obj.verilog_mod_declaration()
+                        nevis_top += conn_obj.verilog_mod_declaration(define_rd_en=define_rd_en)
+                        define_rd_en = False
 
         print(obj_lst_nevis)
         print(adj_mat_nevis)

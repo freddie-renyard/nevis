@@ -49,6 +49,6 @@
         .o_global_pulse(o_scheduler)
     );
 
-    assign debug_data = uart_tx_data[8:0];
+    assign debug_data = uart_rx_data[7:0];
 
     <rx-flag>

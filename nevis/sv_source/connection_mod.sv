@@ -6,6 +6,7 @@
         .N_NEURON_PRE(N_NEURON_PRE_<i_pre>C<i_post>),
         .N_NEURON_POST(1),
         .PSTC_SHIFT(PSTC_SHIFT_<i_pre>C<i_post>),
+        .RECURRENT(<recurrent>),
         .N_ACTIV_EXTRA(N_ACTIV_EXTRA_<i_pre>C<i_post>),
         .OUTPUT_DIMS(OUTPUT_DIMS_<i_pre>C<i_post>),
         .N_OUTPUT(N_OUTPUT_<i_pre>C<i_post>),
@@ -19,7 +20,7 @@
         .i_spike_addr(o_spike_bus_<i_pre>),
         //.i_addr_valid(o_addr_valid_0),
         .i_fifo_empty(o_fifo_empty_<i_pre>),
-        .o_fifo_rd_en(i_rd_en_<i_pre>),
+        .o_fifo_rd_en(<read_enable>/*i_rd_en_<i_pre>*/),
         
         .i_prev_idle(o_idle_<i_pre>),
         .o_activate_encoder(activate_encoder_<i_pre>C<i_post>),

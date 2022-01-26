@@ -291,6 +291,7 @@ class Encoder:
 
         output_str = ""
         for i, index in enumerate(post_indices):
+            logger.info("Post Index: {} {}".format(i, index))
 
             for dim in range(self.input_dims):
                 assign_temp = assignment.replace("<current_dim>", str(dim))
@@ -452,10 +453,22 @@ class Synapses:
         output_str = output_str.replace("<i_pre>", str(self.pre_index))
         return output_str.replace("<i_post>", str(self.post_index))
 
-    def verilog_mod_declaration(self):
+    def verilog_mod_declaration(self, define_rd_en=True):
 
         output_str = open("nevis/sv_source/connection_mod.sv").read()
         output_str = output_str.replace("<i_pre>", str(self.pre_index))
+
+        recurrent = (self.pre_index == self.post_index)
+        output_str = output_str.replace("<recurrent>", str(int(recurrent)))
+
+        # Allows for definition of the read enable signal for only one
+        # of the output connections, under the assumption that they
+        # operate in lockstep and make calls for data on the same clk cycle.
+        if define_rd_en:
+            output_str = output_str.replace("<read_enable>", (str('i_rd_en_') + str(self.pre_index)))
+        else:
+            output_str = output_str.replace("<read_enable>", "")
+
         return output_str.replace("<i_post>", str(self.post_index))
 
     def calculate_scale_w(self, target_list):

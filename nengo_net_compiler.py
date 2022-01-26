@@ -18,11 +18,11 @@ def input_func_cos(t):
     return x
 
 def target_function(x):
-    return x
+    return x**2
 
 model = Network()
 
-dimensions = 4
+dimensions = 1
 
 with model:
 
@@ -37,26 +37,29 @@ with model:
         a = nengo.Ensemble(
             n_neurons=100, 
             dimensions=dimensions,
-            neuron_type=nengo.neurons.LIF(tau_rc)
-        )
-
-        b = nengo.Ensemble(
-            n_neurons=150, 
-            dimensions=dimensions,
-            neuron_type=nengo.neurons.LIF(tau_rc)
+            neuron_type=nengo.neurons.LIF(tau_rc),
+            radius=1.5
         )
         
         nengo.Connection(in_node_1, a)
-        nengo.Connection(in_node_1, b)
         
         output_node_1 = nengo.Node(size_in=dimensions)
         nengo.Connection(a, output_node_1, synapse=t_pstc)
 
-        output_node_2 = nengo.Node(size_in=dimensions)
-        nengo.Connection(b, output_node_2, synapse=t_pstc)
+        nengo.Connection(a, a, synapse=t_pstc)
 
     stim1 = nengo.Node(input_func_sin)
     nengo.Connection(stim1, nevis_model.nodes[0])
 
+    a = nengo.Ensemble(
+        n_neurons=100, 
+        dimensions=dimensions,
+        neuron_type=nengo.neurons.LIF(tau_rc),
+        radius=1.5
+    )
+
+    nengo.Connection(stim1, a)
+    nengo.Connection(a, a, synapse=t_pstc)
+    
 import nengo_gui
 nengo_gui.GUI(__file__).start()
