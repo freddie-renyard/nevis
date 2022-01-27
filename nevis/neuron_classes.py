@@ -308,10 +308,11 @@ class Synapses:
     def __init__(self, 
         pstc_scale, 
         decoders_list, radius_pre,
-        n_activ_extra, n_output, radix_w, 
+        n_activ_extra, radix_output, radix_w, 
         minimum_val, 
         pre_index, post_start_index, 
         verbose=False):
+        
         """ Creates the appropriate parameters needed for the synaptic weights module in hardware. 
         On initialisation, the class runs the compilation of all the relevant model parameters and 
         stores them as attributes of the instance of the class.
@@ -360,12 +361,19 @@ class Synapses:
 
         self.scale_w = Compiler.determine_middle_exp(decoders_list.flatten())
 
+        """ LEGACY Compensation for radius
         extra_bits = math.ceil(math.log2(radius_pre)) - 1
         if extra_bits < 0: extra_bits = 0
         self.scale_w += extra_bits
+        """
+        # Compute the non-fractional bits needed
+        # to represent the previous ensemble's spikes accurately
+        self.radius_pre = radius_pre
+        self.n_output = math.ceil(math.log2(radius_pre + 1)) + 1
+        self.n_output += radix_output
         
         self.radix_w = radix_w
-        self.n_output = n_output
+        self.radix_output = radix_output
         self.n_activ_extra = n_activ_extra
         
         # Calculate the number of bits to shift by to implement the post_synaptic filter.
@@ -434,6 +442,7 @@ class Synapses:
         verilog_header.write(('N_NEURON_PRE_' + index + ' = ' + str(self.n_neurons_pre) + ',' + '\n'))
         verilog_header.write(('N_ACTIV_EXTRA_' + index + ' = ' + str(self.n_activ_extra) + ',' + '\n'))
         verilog_header.write(('N_OUTPUT_' + index + ' = ' + str(self.n_output) + ',' + '\n'))
+        verilog_header.write(('RADIX_OUTPUT_' + index + ' = ' + str(self.radix_output) + ',' + '\n'))
         verilog_header.write(('PSTC_SHIFT_' + index + ' = ' + str(self.pstc_shift) + ',' + '\n'))
         verilog_header.write(('OUTPUT_DIMS_' + index + ' = ' + str(self.output_dims) + ',' + '\n'))
 

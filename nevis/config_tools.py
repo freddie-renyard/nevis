@@ -83,7 +83,7 @@ class ConfigTools:
     @classmethod
     def create_full_model_config(
         cls, 
-        in_node_depth, in_node_dims,
+        in_node_depth, in_node_dims, in_node_radix,
         out_node_depth, out_node_dims, out_node_scale
         ):
         """Creates a JSON file which describes the parameters needed
@@ -106,6 +106,7 @@ class ConfigTools:
 
         model_dict["in_node_depth"] = in_node_depth
         model_dict["in_node_dims"]  = in_node_dims
+        model_dict["in_node_radix"] = in_node_radix
 
         model_dict["out_node_depth"] = out_node_depth
         model_dict["out_node_dims"]  = out_node_dims

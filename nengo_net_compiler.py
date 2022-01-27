@@ -26,7 +26,7 @@ dimensions = 1
 
 with model:
 
-    nevis_model = NevisNetwork(compile_network=True)
+    nevis_model = NevisNetwork(compile_network=False)
     with nevis_model:
         
         t_pstc = Global_Tools.inverse_pstc(128, 0.001)
@@ -38,15 +38,26 @@ with model:
             n_neurons=100, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc),
-            radius=1.5
+            radius=1
         )
         
         nengo.Connection(in_node_1, a)
         
         output_node_1 = nengo.Node(size_in=dimensions)
-        nengo.Connection(a, output_node_1, synapse=t_pstc)
 
-        nengo.Connection(a, a, synapse=t_pstc)
+        """
+        b = nengo.Ensemble(
+            n_neurons=100, 
+            dimensions=dimensions,
+            neuron_type=nengo.neurons.LIF(tau_rc),
+            radius=1
+        )
+        """
+
+        #nengo.Connection(a, b, synapse=t_pstc)
+        #nengo.Connection(b, output_node_1, synapse=t_pstc)
+
+        nengo.Connection(a, output_node_1, synapse=t_pstc)
 
     stim1 = nengo.Node(input_func_sin)
     nengo.Connection(stim1, nevis_model.nodes[0])
@@ -55,11 +66,13 @@ with model:
         n_neurons=100, 
         dimensions=dimensions,
         neuron_type=nengo.neurons.LIF(tau_rc),
-        radius=1.5
+        radius=1
     )
 
+    output_node = nengo.Node(size_in=dimensions)
+
     nengo.Connection(stim1, a)
-    nengo.Connection(a, a, synapse=t_pstc)
+    nengo.Connection(a, output_node, synapse=t_pstc)
     
 import nengo_gui
 nengo_gui.GUI(__file__).start()

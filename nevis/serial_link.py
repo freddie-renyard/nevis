@@ -178,6 +178,7 @@ class FPGANetworkPort:
         self.in_node_dims = model_dict["in_node_dims"]
         self.in_node_num = len(self.in_node_dims)
         self.n_values_to_tx = sum(self.in_node_dims)
+        self.in_radix = model_dict["in_node_radix"]
 
         self.bytes_to_send = math.ceil((self.in_node_depth * sum(self.in_node_dims) * self.in_node_num) / 8.0)
 
@@ -229,7 +230,7 @@ class FPGANetworkPort:
         """
         
         # Scale the input value up
-        in_scale = 2 ** (self.in_node_depth - 1)
+        in_scale = 2 ** (self.in_radix)
 
         full_tx_word = ""
         d = d[0:self.n_values_to_tx]
@@ -241,6 +242,8 @@ class FPGANetworkPort:
             full_tx_word += bit_obj.bin #  bit_obj.bin + full_tx_word
         in_total = bitstring.Bits(bin=full_tx_word)
         
+        print("      ", bit_obj.bin)
+
         t_start = timer()
 
         try:

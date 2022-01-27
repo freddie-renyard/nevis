@@ -25,12 +25,12 @@ class NevisCompiler:
         # with space, etc.
         self.comp_args = {}
         self.comp_args["radix_encoder"]  = 10
-        self.comp_args["bits_input"]     = 8
+        self.comp_args["radix_input"]    = 6
         self.comp_args["radix_phi"]      = 5
         self.comp_args["radix_weights"]  = 7
         self.comp_args["n_dv_post"]      = 10
         self.comp_args["n_activ_extra"]  = 3
-        self.comp_args["n_connection_output"]   = 8
+        self.comp_args["radix_connection_output"] = 7
 
         self.comp_args["min_float_val"]  = 1*2**-50
 
@@ -106,10 +106,11 @@ class NevisCompiler:
         # This will make absolutely sure that Verilog does not infer 
         # signals if this is not desired.
 
+        # The following UART declaration assumes that the maximum output value will be 2.
         uart_obj = UART(
             baud          = 2000000,
-            n_input_data  = self.comp_args["bits_input"],
-            n_output_data = self.comp_args["n_connection_output"]
+            n_input_data  = self.comp_args["radix_input"] + 2,
+            n_output_data = self.comp_args["radix_connection_output"] + 2
         )
 
         nevis_top = open("nevis/sv_source/nevis_top.sv").read()
@@ -149,11 +150,12 @@ class NevisCompiler:
 
                     for node_data in zip(conns,conn_indices):
 
+                        # The following assumes that input values are between 1 and -1
                         source_conn = DirectConnection(
                             dims = node_data[0].pre_obj.size_out,
                             pre_index = i,
                             post_index = node_data[1],
-                            bit_depth = self.comp_args["n_connection_output"]
+                            bit_depth = self.comp_args["radix_connection_output"] + 1
                         )
 
                         nevis_top += source_conn.verilog_wire_declaration()
@@ -183,24 +185,12 @@ class NevisCompiler:
 
             elif type(vertex) == nengo.Ensemble:
                 
-                # Count the number of inputs to the ensemble
-                input_num = np.count_nonzero(np.transpose(adj_mat_obj)[i])
-
-                # Generate the ensemble and add it's parameter 
-                # declarations to the nevis_top file.
-                ensemble = self.generate_nevis_ensemble(
-                    ens_obj     = vertex, 
-                    ens_params  = obj_lst_params[i], 
-                    index       = i, 
-                    input_num   = input_num
-                )
-                nevis_top += ensemble.verilog_wire_declaration()
-
-                obj_lst_nevis.append(ensemble)
-                
+                # Loop over the fan out connections and declare them in the Verilog
                 conn_indices = np.nonzero(adj_mat_visual[i])[0]
                 output_conns = adj_mat_obj[i][conn_indices]
                 output_conn_params = adj_mat_params[i][conn_indices]
+
+                radius_sum = 0
                 
                 for conn_data in zip(output_conns, output_conn_params, conn_indices):
                     connection = self.generate_nevis_connection(
@@ -210,8 +200,28 @@ class NevisCompiler:
                         post_index  = conn_data[2]
                     )
                     nevis_top += connection.verilog_wire_declaration()
+                    radius_sum += connection.radius_pre
                     adj_mat_nevis[i][int(conn_data[2])] = connection
 
+                # Count the number of inputs to the ensemble
+                input_num = np.count_nonzero(np.transpose(adj_mat_obj)[i])
+
+                # Determine the number of fractional bits needed to represent
+                # the input value.
+                non_frac_bits = math.ceil(math.log2(radius_sum + 1)) + 1
+
+                # Generate the ensemble and add it's parameter 
+                # declarations to the nevis_top file.
+                ensemble = self.generate_nevis_ensemble(
+                    ens_obj     = vertex, 
+                    ens_params  = obj_lst_params[i], 
+                    index       = i, 
+                    input_num   = input_num,
+                    non_frac_bits = non_frac_bits
+                )
+                nevis_top += ensemble.verilog_wire_declaration()
+
+                obj_lst_nevis.append(ensemble)
             else:
                 print("ERROR")
                 logger.error("[NeVIS]: Only node and ensemble objects are supported.")
@@ -263,16 +273,18 @@ class NevisCompiler:
             output_file.write(nevis_top)
         
         # Save the compiled models's parameters in a JSON file
+        # The following declaration assumes that the outputs are always between 4 and -4
         ConfigTools.create_full_model_config(
-            in_node_depth   = self.comp_args["bits_input"],
+            in_node_depth   = self.comp_args["radix_input"] + 2,
+            in_node_radix   = self.comp_args["radix_input"],
             in_node_dims    = in_node_dims,
 
-            out_node_depth  = self.comp_args["n_connection_output"],
+            out_node_depth  = self.comp_args["radix_connection_output"] + 3,
             out_node_dims   = out_node_dims,
-            out_node_scale  = self.comp_args["n_connection_output"]-4,
+            out_node_scale  = self.comp_args["radix_connection_output"] + 3 - 4,
         )
 
-    def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num):
+    def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num, non_frac_bits):
         """This method inputs a Nengo ensemble (both object and built obj if needed)
         and returns a NeVIS Encoder object.
         """
@@ -284,7 +296,7 @@ class NevisCompiler:
         ens_args["bias"]                = ens_params.bias
         ens_args["t_rc"]                = ens_obj.neuron_type.tau_rc
         ens_args["t_rc"]                = ens_args["t_rc"] / self.sim_args["dt"]
-        ens_args["radix_input"]         = self.comp_args["bits_input"] - 1 # TODO Needs to take into account the radius.
+        ens_args["radix_input"]         = self.comp_args["radix_input"]
  
         # scaled_encoders = gain * encoders
         # TODO this is computationally wasteful, but the way that the Encoder 
@@ -303,7 +315,7 @@ class NevisCompiler:
             bias_list       = ens_args["bias"],
             t_rc            = ens_args["t_rc"],
             ref_period      = ens_args["ref_period"],
-            n_x             = self.comp_args["bits_input"],
+            n_x             = ens_args["radix_input"] + non_frac_bits,
             radix_x         = ens_args["radix_input"],
             radix_g         = self.comp_args["radix_encoder"],
             radix_b         = self.comp_args["radix_encoder"],
@@ -338,7 +350,7 @@ class NevisCompiler:
             decoders_list   = conn_args["weights"], 
             radius_pre      = conn_args["pre_radius"],
             n_activ_extra   = self.comp_args["n_activ_extra"],
-            n_output        = self.comp_args["n_connection_output"],
+            radix_output    = self.comp_args["radix_connection_output"],
             radix_w         = self.comp_args["radix_weights"],
             minimum_val     = self.comp_args["min_float_val"],
             pre_index       = pre_index,
