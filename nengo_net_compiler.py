@@ -26,7 +26,7 @@ dimensions = 1
 
 with model:
 
-    nevis_model = NevisNetwork(compile_network=False)
+    nevis_model = NevisNetwork(compile_network=True)
     with nevis_model:
         
         t_pstc = Global_Tools.inverse_pstc(128, 0.001)

@@ -194,7 +194,7 @@ class Encoder:
         """
         self.comp_encoder_concat = [""] * (self.n_neurons)
         if self.input_dims != 1:
-            self.comp_enc_list, self.n_phi = Compiler.compile_floats(target_list, radix_phi, verbose=True)
+            self.comp_enc_list, self.n_phi = Compiler.compile_to_fixed(target_list, radix_phi, verbose=True)
             comp_enc_struct = np.reshape(self.comp_enc_list, (self.input_dims, self.n_neurons))
             for compiled_str in comp_enc_struct:
                 for i, string in enumerate(compiled_str):

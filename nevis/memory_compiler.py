@@ -1,8 +1,8 @@
 import math
 import numpy as np
 from matplotlib import pyplot as plt, scale
-from numpy.lib.twodim_base import _trilu_indices_form_dispatcher
 import logging
+from math import sqrt
 
 logger2 = logging.getLogger(__name__)
 
@@ -17,7 +17,7 @@ class Compiler:
     """
 
     @classmethod
-    def compile_floats(cls, target_list, bin_places, verbose=False):
+    def compile_to_fixed(cls, target_list, bin_places, verbose=False):
 
         """This method will compile a list of floating point parameters into binary numbers,
         represented as strings. The bit width for compilation is determined by the required
@@ -34,7 +34,6 @@ class Compiler:
             A flag which can be set to check each floating point value against it's
             compiled binary counterpart.
 
-
         Returns
         -------
         compiled_str: [str]
@@ -47,51 +46,43 @@ class Compiler:
         compiled_str = []
         int_bit_depth = 0
 
+        # Find the maximum integer value that will need to be
+        # represented in the list, and the number of bits needed
+        # to store it
         max_value = np.amax([abs(x) for x in target_list])
-        
-        def num_split(x):
-            
-            sign = (x < 0)
-            x = abs(x)
-
-            int_part = math.floor(x)
-            fractional_part = x - int_part
-
-            overflow = (1 - (1 / (2 ** bin_places))) < fractional_part
-
-            if overflow:
-                int_part += 1
-                fractional_part = 0
-
-            return int_part, fractional_part, sign
-
-        max_int, _, _ = num_split(max_value)
-
+        max_int, _, _ = cls.num_split(max_value, bin_places)
         int_bit_depth = math.ceil(math.log2(max_int + 1)) + 1
 
         logger2.info('Report: Whole Number Bit Depth: %4f, Fractional Bit Depth: %4f', int_bit_depth, bin_places)
         logger2.info('Report: Total Bit Depth: %s', str(int_bit_depth + bin_places))
 
-        i = 0
-        for x in target_list:
+        for i, x in enumerate(target_list):
             
-            int_part, fractional_part, sign = num_split(x)
-   
-            bin_frac, _ , _ = cls.frac_to_truncated_bin(fractional_part, bin_places)     
+            # Split the number apart into its unsigned integer and fractional parts, plus sign
+            int_part, fractional_part, sign = cls.num_split(x, bin_places)
+
+            # Convert the fractional part to binary string
+            bin_frac, _ , _ = cls.frac_to_truncated_bin(fractional_part, bin_places)   
+
+            # Convert the integer part to binary  
             bin_int = int("{0:032b}".format(int_part))
-        
+
+            # Combine the integer and fractional part into a full unsigned binary string
             final_number = str(bin_int) + bin_frac
             total_bit_depth = int_bit_depth + bin_places
 
+            # Zero pad numbers which are too short for the memory width
             if len(str(final_number)) != total_bit_depth:
                 final_number = "0" * (total_bit_depth - len(str(final_number))) + final_number
-                
+            
+            # Catch the negative zero representation
             if sign:
                 is_negative_zero = (int(bin_frac) == 0) & (int(bin_int) == 0)
             else:
                 is_negative_zero = False
 
-            # Conversion to twos complement for the binary integers that require it
+            # Conversion to twos complement for the binary integers that represent negative 
+            # numbers
             if sign & ~is_negative_zero:
                 
                 flipped_number = ""
@@ -111,12 +102,12 @@ class Compiler:
 
             compiled_str.append(final_number)
 
+            # Logging and debug
             if len(final_number) != total_bit_depth:
                 logger2.error("ERROR: Final Value is not equal to bit depth for neuron %i", i)
 
             if verbose:
                 logger2.info("INFO: Index: %i, Value: %.5f, --> %s", i, x, str(final_number))
-                i += 1
         
         return compiled_str, total_bit_depth
 
@@ -134,7 +125,7 @@ class Compiler:
         force_exp_depth : 
             The desired depth of the exponent, for compiling multidimensional decoders.
         verbose: bool
-            Whether to output a detailed output of the process to the terminal.
+            Whether to print a detailed output of the process to the terminal.
         """
 
         compiled_str = []
@@ -142,23 +133,20 @@ class Compiler:
         # Normalised mantissa - add the sign bit to the total mantissa bit depth.
         mantissa_depth = radix_mantissa + 1
 
+        # If a exponent depth hasn't been manually set, compute it
         if force_exp_depth is None:
             exp_depth = cls.calculate_exponent_depth(target_list)
         else:
             exp_depth = force_exp_depth
         
-        # Iterate over every value
-        i=0
-        for x in target_list:
+        # Iterate over every value in the list to be compiled.
+        for i, x in enumerate(target_list):
             
-            # Calculate the exponent needed
+            # Normalise the number to within 1 and -1, and simultaneously
+            # compute the exponent of the value (mantissa x 2 ^ exponent)
             value = abs(x)
             man_sign = (x < 0)
             exponent_val = 0
-
-            # Check if the value is zero.
-            if value < 1*10**-50:
-                value = 1*10**-50
 
             if value >= 1.0:
                 while value >= 1.0:
@@ -171,10 +159,10 @@ class Compiler:
                 value /= 2
                 exponent_val += 1
 
-            # Convert the mantissa to its binary string representation
+            # Convert the mantissa to its unsigned binary string representation
             mantissa_bin, _, overflow = cls.frac_to_truncated_bin(value, radix_mantissa, man_sign)
 
-            # Add a positive sign bit
+            # Add a positive sign bit if the value hasn't overflowed
             if not overflow:
                 mantissa_bin = "0" + mantissa_bin
 
@@ -186,11 +174,11 @@ class Compiler:
                 mantissa_bin = "0" + "1" + "0"*(radix_mantissa-1)
                 logger2.warning("An overflow has occured. This can lead to unexpected float compiler behaviour.")
 
-            # Convert the mantissa 2's complement if required.
+            # Convert the mantissa to 2's complement if value is negative.
             if man_sign and not overflow:
                 mantissa_bin = cls.twos_complementer(mantissa_bin, mantissa_depth)
 
-            # Convert the exponent to binary
+            # Convert the exponent to it's binary string representation
             exp_sign = (exponent_val < 0)
             exponent_bin = str(int("{0:032b}".format(abs(exponent_val))))
             
@@ -198,7 +186,7 @@ class Compiler:
             if len(str(exponent_bin)) != exp_depth:
                 exponent_bin = "0" * (exp_depth - len(exponent_bin)) + exponent_bin
             
-            # Convert the negative binary exponent to its signed representation.
+            # Convert the exponent to 2's complement if value is negative.
             if exp_sign:
                 exponent_bin = cls.twos_complementer(exponent_bin, exp_depth)
 
@@ -220,26 +208,31 @@ class Compiler:
 
     @classmethod 
     def calculate_exponent_depth(cls, target_list):
+        """Compute the exponent bit depth needed to store the parameters in a target list.
+        """
 
-        # Compute the exponent bit depth needed to store the parameters
         max_value = np.amax([abs(x) for x in target_list])
         min_value = np.amin([abs(x) for x in target_list]) 
-        
-        # Calculate upper exponent - NB This method will hang if the largest value is 0.0...
-        upper_exponent = cls.calculate_binary_exp(max_value)
 
-        # Check if the lowest value is a zero.
+        # Check if the lowest or highest value are zero.
         if min_value < 1*10**-50:
             min_value = 1*10**-50
 
+        if max_value < 1*10**-50:
+            max_value = 1*10**-50
+        
+        # Calculate upper and lower exponents
+        upper_exponent = cls.calculate_binary_exp(max_value)
         lower_exponent = cls.calculate_binary_exp(min_value)
 
+        # Return the maximum exponent magnitude
         if upper_exponent > lower_exponent:
             largest_exp = upper_exponent
         else:
             largest_exp = lower_exponent
         
-        # Add one for the sign
+        # Return the number of bits needed to store the value.
+        # Add one for the sign.
         return math.ceil(math.log2(largest_exp + 1)) + 1
 
     @staticmethod
@@ -281,6 +274,26 @@ class Compiler:
             return value
 
     @staticmethod
+    def num_split(x, bin_places):
+        # Split a given number into its unsigned fractional and integer parts, along with its sign
+
+        sign = (x < 0)
+        x = abs(x)
+
+        int_part = math.floor(x)
+        fractional_part = x - int_part
+        
+        # Test if the smallest rounded value has rounded over the maximum value
+        # that the binary number of the given depth can represent
+        overflow = (1 - (1 / (2 ** bin_places))) < fractional_part
+
+        if overflow:
+            int_part += 1
+            fractional_part = 0
+
+        return int_part, fractional_part, sign
+
+    @staticmethod
     def frac_to_truncated_bin(fraction, bin_places, is_neg=False):
         """Compute the rounded binary fraction that can be represented
         in the given number of binary places. 
@@ -297,6 +310,8 @@ class Compiler:
             value_range = 2 ** bin_places - 1
 
         # Calculate the desired amount of fractional value precision.
+        # This is done by rounding the number's magnitude to the closest
+        # binary string representation.
         for value in range(value_range):
 
             if bin_places == 0:
@@ -325,7 +340,7 @@ class Compiler:
         int_debug = bin_frac
         bin_frac = int("{0:032b}".format(bin_frac))
         
-        # Pad with zeroes
+        # Pad with zeroes if needed
         if len(str(bin_frac)) != bin_places and ~overflow_flag:
             bin_frac = "0" * (bin_places - len(str(bin_frac))) + str(bin_frac)
 
@@ -353,7 +368,9 @@ class Compiler:
         new_exp: int
             The exponent, now within exponent limit
         """
+
         abs_exp = abs(value_exp)
+
         if value_exp < 0:
             new_exp = exp_lim*-1
             while abs_exp != exp_lim:
@@ -374,6 +391,8 @@ class Compiler:
         """
 
         flipped_number = ""
+
+        # First take the one's complement by inverting all the bits
         for bit in bin_str:
             if bit == "0":
                 flipped_number += "1"
@@ -383,6 +402,8 @@ class Compiler:
         add_one = int(flipped_number, 2) + 1
         flipped_number = str(int("{0:032b}".format(add_one)))
 
+        # Truncate the flipped number if it is outside of the specified  
+        # binary string length
         if len(flipped_number) != final_bit_depth:
             flipped_number = flipped_number[0:final_bit_depth]
 
@@ -400,7 +421,8 @@ class Compiler:
 
         max_exponent = math.ceil(math.log2(max_val))
         min_exponent = math.ceil(math.log2(min_val))
-
+        
+        # Return the mean average of the max and minimum exponents.
         return abs(int((max_exponent + min_exponent)/2))
 
     @classmethod
@@ -427,7 +449,6 @@ class Compiler:
             y = float(y) / scale_factor
             rmse_sum += (y - x)**2
         
-        from math import sqrt
         rmse = sqrt(rmse_sum / len(test_list))
 
         print("RMSE for this compiler function is", rmse_sum)
@@ -451,10 +472,10 @@ class Compiler:
         resolution = 1000 # How many steps there are for each of the positive and negative portions of the evaluation
         gain = 2 # The dynamic range tested
         test_inputs = [x/resolution for x in range(-resolution, resolution+1)]
-        test_inputs = [x*gain for x in test_inputs]
+        test_inputs = [x*gain for x in test_inputs if x != 0.0]
 
         # Compile the parameters.
-        concat_numbers, mantissa_depth, exp_depth = cls.compile_to_float(test_inputs, mantissa, exp_limit=0.0, force_exp_depth=8, verbose=True)
+        concat_numbers, mantissa_depth, exp_depth = cls.compile_to_float(test_inputs, mantissa, force_exp_depth=8, verbose=True)
 
         # Deconcatenate the data
         exp_bins = [x[mantissa_depth:] for x in concat_numbers]
@@ -513,6 +534,8 @@ class Compiler:
         final_ints = [int(x, 2) * y for x, y in zip(abs_vals, signs)] 
         
         return final_ints
+
+Compiler.test_float_compiler()
 
 """
 NOTES
