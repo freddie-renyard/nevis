@@ -535,7 +535,7 @@ class Compiler:
         
         return final_ints
 
-Compiler.test_float_compiler()
+# Compiler.test_float_compiler()
 
 """
 NOTES
