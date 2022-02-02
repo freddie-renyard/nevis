@@ -184,7 +184,7 @@ class FPGANetworkPort:
 
         # Output side
         self.out_node_depth = int(model_dict["out_node_depth"])
-        self.out_node_scale = model_dict["out_node_scale"]
+        self.out_node_scales = model_dict["out_node_scale"]
         self.out_node_dims = model_dict["out_node_dims"]
         self.n_values_to_rx = sum(self.out_node_dims)
         self.out_node_num = len(self.out_node_dims)
@@ -242,8 +242,6 @@ class FPGANetworkPort:
             full_tx_word += bit_obj.bin #  bit_obj.bin + full_tx_word
         in_total = bitstring.Bits(bin=full_tx_word)
         
-        print("      ", bit_obj.bin)
-
         t_start = timer()
 
         try:
@@ -275,6 +273,6 @@ class FPGANetworkPort:
                 bytes_obj = bitstring.BitArray(bin=data[bottom_i:top_i])
                 bytes_obj = bytes_obj.int
 
-                hardware_vals[i] = bytes_obj / (2 ** (self.out_node_scale))
+                hardware_vals[i] = bytes_obj / (2 ** (self.out_node_scales[i]))
 
         return hardware_vals

@@ -7,6 +7,7 @@
         .N_NEURON_POST(1),
         .PSTC_SHIFT(PSTC_SHIFT_<i_pre>C<i_post>),
         .RECURRENT(<recurrent>),
+        .RADIX_OUTPUT(RADIX_OUTPUT_<i_pre>C<i_post>),
         .N_ACTIV_EXTRA(N_ACTIV_EXTRA_<i_pre>C<i_post>),
         .OUTPUT_DIMS(OUTPUT_DIMS_<i_pre>C<i_post>),
         .N_OUTPUT(N_OUTPUT_<i_pre>C<i_post>),

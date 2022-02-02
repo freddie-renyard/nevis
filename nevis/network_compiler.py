@@ -4,6 +4,7 @@ import logging
 
 from nengo.ensemble import Ensemble
 from numpy.lib.utils import source
+from sklearn.preprocessing import scale
 from nevis.neuron_classes import Synapses, Encoder
 from nevis.config_tools import ConfigTools
 from nevis.filetools import Filetools
@@ -25,12 +26,20 @@ class NevisCompiler:
         # with space, etc.
         self.comp_args = {}
         self.comp_args["radix_encoder"]  = 10
-        self.comp_args["radix_input"]    = 6
+        
         self.comp_args["radix_phi"]      = 5
         self.comp_args["radix_weights"]  = 7
         self.comp_args["n_dv_post"]      = 10
         self.comp_args["n_activ_extra"]  = 3
-        self.comp_args["radix_connection_output"] = 7
+
+        # These must be the same
+        # TODO replace with one parameter
+        self.comp_args["radix_input"] = 6
+        self.comp_args["radix_connection_output"] = 6
+
+        # Assumes fixed ensemble radius
+        # TODO Make this reconfigurable.
+        self.comp_args["n_tx_bits"] = self.comp_args["radix_connection_output"] + 2
 
         self.comp_args["min_float_val"]  = 1*2**-50
 
@@ -110,15 +119,18 @@ class NevisCompiler:
         uart_obj = UART(
             baud          = 2000000,
             n_input_data  = self.comp_args["radix_input"] + 2,
-            n_output_data = self.comp_args["radix_connection_output"] + 2
+            n_output_data = self.comp_args["n_tx_bits"]
         )
 
         nevis_top = open("nevis/sv_source/nevis_top.sv").read()
 
         obj_lst_nevis = []
+
         in_node_dims  = []
+
         out_node_dims = []
-        
+        out_node_scales = []
+
         for i, vertex in enumerate(obj_lst_obj):
                 
             if type(vertex) == nengo.Node:
@@ -150,12 +162,12 @@ class NevisCompiler:
 
                     for node_data in zip(conns,conn_indices):
 
-                        # The following assumes that input values are between 1 and -1
+                        # The following assumes that input values are between 1 and -1 (with headroom)
                         source_conn = DirectConnection(
                             dims = node_data[0].pre_obj.size_out,
                             pre_index = i,
                             post_index = node_data[1],
-                            bit_depth = self.comp_args["radix_connection_output"] + 1
+                            bit_depth = self.comp_args["radix_input"] + 2
                         )
 
                         nevis_top += source_conn.verilog_wire_declaration()
@@ -171,9 +183,16 @@ class NevisCompiler:
                     # Append the dimensionality of the node to a list
                     # This is used to compile the model config JSON for the UART
                     out_node_dims.append(vertex.size_out)
+                    
                     self.out_nodes_nengo.append(vertex)
                 
                     pre_obj = np.nonzero(adj_mat_visual[:,i])[0]
+
+                    # Compute the scale factor needed to interpret the output
+                    pre_ens_radius = obj_lst_obj[pre_obj[0]].radius
+                    conn_bits = math.ceil(math.log2(pre_ens_radius+1)) + 1
+                    scale_factor = self.comp_args["n_tx_bits"] - conn_bits
+                    out_node_scales.append(scale_factor)
 
                     if len(pre_obj) != 1:
                         print("ERROR: output nodes must only connect from one ensemble to one output node.")
@@ -190,7 +209,7 @@ class NevisCompiler:
                 output_conns = adj_mat_obj[i][conn_indices]
                 output_conn_params = adj_mat_params[i][conn_indices]
 
-                radius_sum = 0
+                radius_max = 0
                 
                 for conn_data in zip(output_conns, output_conn_params, conn_indices):
                     connection = self.generate_nevis_connection(
@@ -200,7 +219,7 @@ class NevisCompiler:
                         post_index  = conn_data[2]
                     )
                     nevis_top += connection.verilog_wire_declaration()
-                    radius_sum += connection.radius_pre
+                    radius_max = max([connection.radius_pre, radius_max])
                     adj_mat_nevis[i][int(conn_data[2])] = connection
 
                 # Count the number of inputs to the ensemble
@@ -208,7 +227,7 @@ class NevisCompiler:
 
                 # Determine the number of fractional bits needed to represent
                 # the input value.
-                non_frac_bits = math.ceil(math.log2(radius_sum + 1)) + 1
+                non_frac_bits = math.ceil(math.log2(radius_max + 1)) + 1
 
                 # Generate the ensemble and add it's parameter 
                 # declarations to the nevis_top file.
@@ -279,9 +298,9 @@ class NevisCompiler:
             in_node_radix   = self.comp_args["radix_input"],
             in_node_dims    = in_node_dims,
 
-            out_node_depth  = self.comp_args["radix_connection_output"] + 3,
+            out_node_depth  = self.comp_args["n_tx_bits"],
             out_node_dims   = out_node_dims,
-            out_node_scale  = self.comp_args["radix_connection_output"] + 3 - 4,
+            out_node_scale  = out_node_scales,
         )
 
     def generate_nevis_ensemble(self, ens_obj, ens_params, index, input_num, non_frac_bits):
@@ -342,6 +361,7 @@ class NevisCompiler:
         if type(pre_obj) == nengo.Ensemble:
             conn_args["pre_radius"] = pre_obj.radius
         else:
+            # This assumes the input data is always between 1 and -1
             conn_args["pre_radius"] = 1
 
         # Compile an output node (Nevis - Synapses)

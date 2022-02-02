@@ -33,36 +33,45 @@ with model:
         tau_rc = Global_Tools.inverse_rc(8, 0.001)
 
         in_node_1 = nengo.Node(size_in=dimensions)
+        in_node_2 = nengo.Node(size_in=dimensions)
 
         a = nengo.Ensemble(
-            n_neurons=100, 
+            n_neurons=50, 
+            dimensions=dimensions,
+            neuron_type=nengo.neurons.LIF(tau_rc),
+            radius=1
+        )
+        
+        b = nengo.Ensemble(
+            n_neurons=50, 
+            dimensions=dimensions,
+            neuron_type=nengo.neurons.LIF(tau_rc),
+            radius=1
+        )
+        
+        c = nengo.Ensemble(
+            n_neurons=50, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc),
             radius=1
         )
         
         nengo.Connection(in_node_1, a)
+        nengo.Connection(in_node_2, b)
+
+        nengo.Connection(a,c, synapse=t_pstc)
+        nengo.Connection(b,c, synapse=t_pstc)
         
         output_node_1 = nengo.Node(size_in=dimensions)
-
-        """
-        b = nengo.Ensemble(
-            n_neurons=100, 
-            dimensions=dimensions,
-            neuron_type=nengo.neurons.LIF(tau_rc),
-            radius=1
-        )
-        """
-
-        #nengo.Connection(a, b, synapse=t_pstc)
-        #nengo.Connection(b, output_node_1, synapse=t_pstc)
-
-        nengo.Connection(a, output_node_1, synapse=t_pstc)
+        
+        nengo.Connection(c, output_node_1, synapse=t_pstc, function=lambda x: x)
 
     stim1 = nengo.Node(input_func_sin)
+    stim2 = nengo.Node(input_func_cos)
     nengo.Connection(stim1, nevis_model.nodes[0])
+    nengo.Connection(stim2, nevis_model.nodes[1])
 
-    a = nengo.Ensemble(
+    a_nengo = nengo.Ensemble(
         n_neurons=100, 
         dimensions=dimensions,
         neuron_type=nengo.neurons.LIF(tau_rc),
@@ -71,8 +80,8 @@ with model:
 
     output_node = nengo.Node(size_in=dimensions)
 
-    nengo.Connection(stim1, a)
-    nengo.Connection(a, output_node, synapse=t_pstc)
+    nengo.Connection(stim1, a_nengo)
+    nengo.Connection(a_nengo, output_node, synapse=t_pstc)
     
 import nengo_gui
 nengo_gui.GUI(__file__).start()
