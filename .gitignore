@@ -4,3 +4,4 @@ nevis/config
 nevis/logs
 plan.txt
 nevis/__pycache__
+nevis/*.pyc
