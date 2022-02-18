@@ -22,7 +22,7 @@ def target_function(x):
 
 model = Network()
 
-dimensions = 1
+dimensions = 5
 
 with model:
 
@@ -36,21 +36,14 @@ with model:
         in_node_2 = nengo.Node(size_in=dimensions)
 
         a = nengo.Ensemble(
-            n_neurons=50, 
+            n_neurons=3000, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc),
             radius=1
         )
         
         b = nengo.Ensemble(
-            n_neurons=50, 
-            dimensions=dimensions,
-            neuron_type=nengo.neurons.LIF(tau_rc),
-            radius=1
-        )
-        
-        c = nengo.Ensemble(
-            n_neurons=50, 
+            n_neurons=3000, 
             dimensions=dimensions,
             neuron_type=nengo.neurons.LIF(tau_rc),
             radius=1
@@ -58,13 +51,12 @@ with model:
         
         nengo.Connection(in_node_1, a)
         nengo.Connection(in_node_2, b)
-
-        nengo.Connection(a,c, synapse=t_pstc)
-        nengo.Connection(b,c, synapse=t_pstc)
         
         output_node_1 = nengo.Node(size_in=dimensions)
-        
-        nengo.Connection(c, output_node_1, synapse=t_pstc, function=lambda x: x)
+        output_node_2 = nengo.Node(size_in=dimensions)
+
+        nengo.Connection(a, output_node_1, synapse=t_pstc, function=lambda x: x)
+        nengo.Connection(b, output_node_2, synapse=t_pstc)
 
     stim1 = nengo.Node(input_func_sin)
     stim2 = nengo.Node(input_func_cos)

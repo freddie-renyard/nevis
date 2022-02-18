@@ -273,6 +273,6 @@ class FPGANetworkPort:
                 bytes_obj = bitstring.BitArray(bin=data[bottom_i:top_i])
                 bytes_obj = bytes_obj.int
 
-                hardware_vals[i] = bytes_obj / (2 ** (self.out_node_scales[i]))
+                hardware_vals[i] = bytes_obj / (2 ** (self.out_node_scales[0]))
 
         return hardware_vals
