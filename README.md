@@ -1,6 +1,6 @@
 # Overview
 
-NeVIS is a FPGA backend for running and deploying spiking neural networks.
+NeVIS (Neural Verilog Integrated System) is a FPGA backend for running and deploying spiking neural networks.
 
 # Summary
 
